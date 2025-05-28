@@ -2,9 +2,10 @@ import asyncio
 import logging
 from typing import Dict, Any
 
-from services.candle_alerts.websocket import BinanceWebSocketManager, BinanceRESTClient
+from services.candle_alerts.websocket import BinanceWebSocketManager
 from services.candle_alerts.processor import CandleProcessor
 from config.settings import config
+from services.binanceAPI.service import binance_api
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class CandleAlertService:
         
         try:
             # Обновляем список символов
-            await self._update_symbols()
+            await binance_api._fetch_all_futures_symbols
             
             # Запускаем обработчик свечей
             await self.processor.start()
@@ -66,24 +67,6 @@ class CandleAlertService:
         
         logger.info("Candle Alert Service stopped")
     
-    async def _update_symbols(self):
-        """Обновление списка символов с Binance"""
-        logger.info("Updating symbols list from Binance...")
-        
-        try:
-            async with BinanceRESTClient() as client:
-                # Получаем все символы
-                all_symbols = await client.get_all_symbols()
-                
-                if all_symbols:
-                    # Обновляем список в WebSocket менеджере
-                    # В реальной реализации нужно обновить all_streams
-                    logger.info(f"Updated {len(all_symbols)} symbols")
-                else:
-                    logger.warning("No symbols received from Binance")
-                    
-        except Exception as e:
-            logger.error(f"Error updating symbols: {e}")
     
     async def _monitor_loop(self):
         """Цикл мониторинга состояния сервиса"""
