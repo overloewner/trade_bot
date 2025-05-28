@@ -53,7 +53,6 @@ class MemoryCache:
         
         # История алертов для дедупликации
         self.alert_history: deque = deque(maxlen=config.ALERT_HISTORY_SIZE)
-        self.alert_dedup: Dict[Tuple[int, str, str], datetime] = {}
         
         # Блокировки для потокобезопасности
         self._locks = {
@@ -97,11 +96,10 @@ class MemoryCache:
                 )
                 self.presets[preset.id] = preset
                 
-                # Добавляем в активные подписки
+                # Добавляем в активные подписки ТОЛЬКО если активен
                 if preset.is_active:
-                    for symbol in preset.pairs:
-                        for interval in preset.intervals:
-                            self.active_subscriptions[symbol][interval][preset.user_id].append(preset.id)
+                    await self._add_preset_to_subscriptions(preset)
+                    logger.info(f"Loaded active preset {preset.id} with {len(preset.pairs)} pairs and {len(preset.intervals)} intervals")
         
         # Загружаем газовые алерты
         gas_alerts = await db_manager.get_all_active_gas_alerts()
@@ -110,6 +108,36 @@ class MemoryCache:
                 self.gas_alerts[alert['user_id']] = float(alert['threshold_gwei'])
         
         logger.info(f"Loaded {len(self.presets)} presets and {len(self.gas_alerts)} gas alerts")
+        
+        # Логируем общую статистику подписок
+        total_subs = 0
+        for symbol_data in self.active_subscriptions.values():
+            for interval_data in symbol_data.values():
+                total_subs += len(interval_data)
+        logger.info(f"Total active subscriptions: {total_subs}")
+    
+    async def _add_preset_to_subscriptions(self, preset: PresetData) -> None:
+        """Добавление пресета в подписки (без блокировки)"""
+        for symbol in preset.pairs:
+            for interval in preset.intervals:
+                self.active_subscriptions[symbol][interval][preset.user_id].append(preset.id)
+                logger.debug(f"Added subscription: {symbol}@{interval} for user {preset.user_id}")
+    
+    async def _remove_preset_from_subscriptions(self, preset: PresetData) -> None:
+        """Удаление пресета из подписок (без блокировки)"""
+        for symbol in preset.pairs:
+            for interval in preset.intervals:
+                user_presets = self.active_subscriptions[symbol][interval].get(preset.user_id, [])
+                if preset.id in user_presets:
+                    user_presets.remove(preset.id)
+                
+                # Удаляем пустые записи
+                if not user_presets:
+                    self.active_subscriptions[symbol][interval].pop(preset.user_id, None)
+                if not self.active_subscriptions[symbol][interval]:
+                    self.active_subscriptions[symbol].pop(interval, None)
+                if not self.active_subscriptions[symbol]:
+                    self.active_subscriptions.pop(symbol, None)
     
     # Управление пресетами
     async def add_preset(self, preset: PresetData) -> None:
@@ -118,9 +146,8 @@ class MemoryCache:
             self.presets[preset.id] = preset
             
             if preset.is_active:
-                for symbol in preset.pairs:
-                    for interval in preset.intervals:
-                        self.active_subscriptions[symbol][interval][preset.user_id].append(preset.id)
+                await self._add_preset_to_subscriptions(preset)
+                logger.info(f"Added active preset {preset.id} to subscriptions")
     
     async def remove_preset(self, preset_id: int) -> None:
         """Удаление пресета из кеша"""
@@ -130,22 +157,11 @@ class MemoryCache:
                 return
             
             # Удаляем из активных подписок
-            for symbol in preset.pairs:
-                for interval in preset.intervals:
-                    user_presets = self.active_subscriptions[symbol][interval].get(preset.user_id, [])
-                    if preset_id in user_presets:
-                        user_presets.remove(preset_id)
-                    
-                    # Удаляем пустые записи
-                    if not user_presets:
-                        self.active_subscriptions[symbol][interval].pop(preset.user_id, None)
-                    if not self.active_subscriptions[symbol][interval]:
-                        self.active_subscriptions[symbol].pop(interval, None)
-                    if not self.active_subscriptions[symbol]:
-                        self.active_subscriptions.pop(symbol, None)
+            await self._remove_preset_from_subscriptions(preset)
             
             # Удаляем сам пресет
             del self.presets[preset_id]
+            logger.info(f"Removed preset {preset_id} from cache")
     
     async def update_preset_status(self, preset_id: int, is_active: bool) -> None:
         """Обновление статуса пресета"""
@@ -161,22 +177,20 @@ class MemoryCache:
             
             if is_active:
                 # Добавляем в активные подписки
-                for symbol in preset.pairs:
-                    for interval in preset.intervals:
-                        self.active_subscriptions[symbol][interval][preset.user_id].append(preset_id)
+                await self._add_preset_to_subscriptions(preset)
+                logger.info(f"Activated preset {preset_id}")
             else:
                 # Удаляем из активных подписок
-                for symbol in preset.pairs:
-                    for interval in preset.intervals:
-                        user_presets = self.active_subscriptions[symbol][interval].get(preset.user_id, [])
-                        if preset_id in user_presets:
-                            user_presets.remove(preset_id)
+                await self._remove_preset_from_subscriptions(preset)
+                logger.info(f"Deactivated preset {preset_id}")
     
     async def get_subscribed_users(self, symbol: str, interval: str) -> Dict[int, List[PresetData]]:
         """Получение пользователей, подписанных на symbol/interval"""
         async with self._lock('subscriptions'):
             result = {}
             user_preset_ids = self.active_subscriptions.get(symbol, {}).get(interval, {})
+            
+            logger.debug(f"Checking subscriptions for {symbol}@{interval}: {len(user_preset_ids)} users")
             
             for user_id, preset_ids in user_preset_ids.items():
                 user_presets = []
@@ -187,6 +201,7 @@ class MemoryCache:
                 
                 if user_presets:
                     result[user_id] = user_presets
+                    logger.debug(f"User {user_id} has {len(user_presets)} active presets for {symbol}@{interval}")
             
             self.stats['cache_hits'] += 1
             return result
@@ -208,27 +223,7 @@ class MemoryCache:
             return [(user_id, threshold) for user_id, threshold in self.gas_alerts.items() 
                     if threshold >= current_gwei]
     
-    # Дедупликация алертов
-    async def should_send_alert(self, user_id: int, symbol: str, interval: str) -> bool:
-        """Проверка, нужно ли отправлять алерт (дедупликация)"""
-        async with self._lock('alerts'):
-            key = (user_id, symbol, interval)
-            last_sent = self.alert_dedup.get(key)
-            
-            now = datetime.now()
-            if last_sent and (now - last_sent).seconds < config.ALERT_DEDUP_WINDOW:
-                self.stats['alerts_deduplicated'] += 1
-                return False
-            
-            self.alert_dedup[key] = now
-            
-            # Чистим старые записи
-            if len(self.alert_dedup) > 10000:
-                cutoff = now - timedelta(seconds=config.ALERT_DEDUP_WINDOW)
-                self.alert_dedup = {k: v for k, v in self.alert_dedup.items() if v > cutoff}
-            
-            return True
-    
+    # Дедупликация алертов - УБРАНА
     async def record_alert(self, alert: AlertRecord) -> None:
         """Запись отправленного алерта"""
         async with self._lock('alerts'):
@@ -258,13 +253,18 @@ class MemoryCache:
     # Статистика
     def get_stats(self) -> Dict[str, Any]:
         """Получение статистики кеша"""
+        total_subscriptions = 0
+        for symbol_data in self.active_subscriptions.values():
+            for interval_data in symbol_data.values():
+                total_subscriptions += len(interval_data)
+        
         return {
             **self.stats,
             'total_presets': len(self.presets),
             'active_presets': sum(1 for p in self.presets.values() if p.is_active),
             'total_gas_alerts': len(self.gas_alerts),
             'unique_symbols': len(self.active_subscriptions),
-            'dedup_cache_size': len(self.alert_dedup),
+            'total_subscriptions': total_subscriptions,
             'alert_history_size': len(self.alert_history)
         }
     

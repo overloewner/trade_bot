@@ -12,12 +12,12 @@ class Keyboards:
         """Главное меню"""
         keyboard = [
             [
-                InlineKeyboardButton("📊 Свечные алерты", callback_data="candle_alerts"),
-                InlineKeyboardButton("⛽ Газ алерты", callback_data="gas_alerts")
+                InlineKeyboardButton(text="📊 Свечные алерты", callback_data="candle_alerts"),
+                InlineKeyboardButton(text="⛽ Газ алерты", callback_data="gas_alerts")
             ],
             [
-                InlineKeyboardButton("📈 Статистика", callback_data="stats"),
-                InlineKeyboardButton("❓ Помощь", callback_data="help")
+                InlineKeyboardButton(text="📈 Статистика", callback_data="stats"),
+                InlineKeyboardButton(text="❓ Помощь", callback_data="help")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -27,11 +27,11 @@ class Keyboards:
         """Меню свечных алертов"""
         keyboard = [
             [
-                InlineKeyboardButton("➕ Создать пресет", callback_data="preset_create"),
-                InlineKeyboardButton("📋 Мои пресеты", callback_data="preset_list")
+                InlineKeyboardButton(text="➕ Создать пресет", callback_data="preset_create"),
+                InlineKeyboardButton(text="📋 Мои пресеты", callback_data="preset_list")
             ],
             [
-                InlineKeyboardButton("🔙 Назад", callback_data="main_menu")
+                InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -46,14 +46,14 @@ class Keyboards:
             button_text = f"{status} {preset['name']}"
             keyboard.append([
                 InlineKeyboardButton(
-                    button_text, 
+                    text=button_text, 
                     callback_data=f"preset_view_{preset['id']}"
                 )
             ])
         
         keyboard.append([
-            InlineKeyboardButton("➕ Создать новый", callback_data="preset_create"),
-            InlineKeyboardButton("🔙 Назад", callback_data="candle_alerts")
+            InlineKeyboardButton(text="➕ Создать новый", callback_data="preset_create"),
+            InlineKeyboardButton(text="🔙 Назад", callback_data="candle_alerts")
         ])
         
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -67,22 +67,22 @@ class Keyboards:
         keyboard = [
             [
                 InlineKeyboardButton(
-                    toggle_text, 
+                    text=toggle_text, 
                     callback_data=f"preset_{toggle_action}_{preset_id}"
                 )
             ],
             [
                 InlineKeyboardButton(
-                    "✏️ Изменить", 
+                    text="✏️ Изменить", 
                     callback_data=f"preset_edit_{preset_id}"
                 ),
                 InlineKeyboardButton(
-                    "🗑 Удалить", 
+                    text="🗑 Удалить", 
                     callback_data=f"preset_delete_{preset_id}"
                 )
             ],
             [
-                InlineKeyboardButton("🔙 К списку", callback_data="preset_list")
+                InlineKeyboardButton(text="🔙 К списку", callback_data="preset_list")
             ]
         ]
         
@@ -94,11 +94,11 @@ class Keyboards:
         keyboard = [
             [
                 InlineKeyboardButton(
-                    "✅ Да, удалить", 
+                    text="✅ Да, удалить", 
                     callback_data=f"preset_delete_confirm_{preset_id}"
                 ),
                 InlineKeyboardButton(
-                    "❌ Отмена", 
+                    text="❌ Отмена", 
                     callback_data=f"preset_view_{preset_id}"
                 )
             ]
@@ -111,24 +111,30 @@ class Keyboards:
         keyboard = [
             [
                 InlineKeyboardButton(
-                    "🏆 Топ 100 по объему", 
+                    text="🏆 Топ 100 по объему", 
                     callback_data="pairs_top100"
                 )
             ],
             [
                 InlineKeyboardButton(
-                    "💰 Топ по объему 24ч", 
+                    text="💰 Топ по объему 24ч", 
                     callback_data="pairs_volume"
                 )
             ],
             [
                 InlineKeyboardButton(
-                    "✏️ Ввести вручную", 
+                    text="🌟 Все пары", 
+                    callback_data="pairs_all"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✏️ Ввести вручную", 
                     callback_data="pairs_manual"
                 )
             ],
             [
-                InlineKeyboardButton("❌ Отмена", callback_data="candle_alerts")
+                InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -144,26 +150,26 @@ class Keyboards:
         
         keyboard.append([
             InlineKeyboardButton(
-                interval, 
+                text=interval, 
                 callback_data=f"interval_toggle_{interval}"
             ) for interval in intervals_row1
         ])
         
         keyboard.append([
             InlineKeyboardButton(
-                interval, 
+                text=interval, 
                 callback_data=f"interval_toggle_{interval}"
             ) for interval in intervals_row2
         ])
         
         keyboard.append([
-            InlineKeyboardButton("✅ Все", callback_data="interval_all"),
-            InlineKeyboardButton("❌ Очистить", callback_data="interval_none")
+            InlineKeyboardButton(text="✅ Все", callback_data="interval_all"),
+            InlineKeyboardButton(text="❌ Очистить", callback_data="interval_none")
         ])
         
         keyboard.append([
-            InlineKeyboardButton("➡️ Далее", callback_data="interval_done"),
-            InlineKeyboardButton("❌ Отмена", callback_data="candle_alerts")
+            InlineKeyboardButton(text="➡️ Далее", callback_data="interval_done"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
         ])
         
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -173,20 +179,20 @@ class Keyboards:
         """Пресеты процентов"""
         keyboard = [
             [
-                InlineKeyboardButton("0.5%", callback_data="percent_0.5"),
-                InlineKeyboardButton("1%", callback_data="percent_1"),
-                InlineKeyboardButton("2%", callback_data="percent_2")
+                InlineKeyboardButton(text="0.5%", callback_data="percent_0.5"),
+                InlineKeyboardButton(text="1%", callback_data="percent_1"),
+                InlineKeyboardButton(text="2%", callback_data="percent_2")
             ],
             [
-                InlineKeyboardButton("3%", callback_data="percent_3"),
-                InlineKeyboardButton("5%", callback_data="percent_5"),
-                InlineKeyboardButton("10%", callback_data="percent_10")
+                InlineKeyboardButton(text="3%", callback_data="percent_3"),
+                InlineKeyboardButton(text="5%", callback_data="percent_5"),
+                InlineKeyboardButton(text="10%", callback_data="percent_10")
             ],
             [
-                InlineKeyboardButton("✏️ Ввести вручную", callback_data="percent_manual")
+                InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="percent_manual")
             ],
             [
-                InlineKeyboardButton("❌ Отмена", callback_data="candle_alerts")
+                InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -199,27 +205,27 @@ class Keyboards:
         if has_alert:
             keyboard.append([
                 InlineKeyboardButton(
-                    f"⚙️ Изменить ({threshold} Gwei)", 
+                    text=f"⚙️ Изменить ({threshold} Gwei)", 
                     callback_data="gas_set"
                 )
             ])
             keyboard.append([
                 InlineKeyboardButton(
-                    "🔴 Отключить", 
+                    text="🔴 Отключить", 
                     callback_data="gas_disable"
                 )
             ])
         else:
             keyboard.append([
                 InlineKeyboardButton(
-                    "🟢 Включить алерты", 
+                    text="🟢 Включить алерты", 
                     callback_data="gas_set"
                 )
             ])
         
         keyboard.append([
-            InlineKeyboardButton("📊 График газа", callback_data="gas_chart"),
-            InlineKeyboardButton("🔙 Главное меню", callback_data="main_menu")
+            InlineKeyboardButton(text="📊 График газа", callback_data="gas_chart"),
+            InlineKeyboardButton(text="🔙 Главное меню", callback_data="main_menu")
         ])
         
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -229,20 +235,20 @@ class Keyboards:
         """Пресеты порогов газа"""
         keyboard = [
             [
-                InlineKeyboardButton("10 Gwei", callback_data="gas_10"),
-                InlineKeyboardButton("15 Gwei", callback_data="gas_15"),
-                InlineKeyboardButton("20 Gwei", callback_data="gas_20")
+                InlineKeyboardButton(text="10 Gwei", callback_data="gas_10"),
+                InlineKeyboardButton(text="15 Gwei", callback_data="gas_15"),
+                InlineKeyboardButton(text="20 Gwei", callback_data="gas_20")
             ],
             [
-                InlineKeyboardButton("25 Gwei", callback_data="gas_25"),
-                InlineKeyboardButton("30 Gwei", callback_data="gas_30"),
-                InlineKeyboardButton("50 Gwei", callback_data="gas_50")
+                InlineKeyboardButton(text="25 Gwei", callback_data="gas_25"),
+                InlineKeyboardButton(text="30 Gwei", callback_data="gas_30"),
+                InlineKeyboardButton(text="50 Gwei", callback_data="gas_50")
             ],
             [
-                InlineKeyboardButton("✏️ Ввести вручную", callback_data="gas_manual")
+                InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="gas_manual")
             ],
             [
-                InlineKeyboardButton("❌ Отмена", callback_data="gas_alerts")
+                InlineKeyboardButton(text="❌ Отмена", callback_data="gas_alerts")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -251,14 +257,14 @@ class Keyboards:
     def back_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
         """Кнопка назад"""
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton("🔙 Назад", callback_data=callback_data)]
+            [InlineKeyboardButton(text="🔙 Назад", callback_data=callback_data)]
         ])
     
     @staticmethod
     def cancel_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
         """Кнопка отмены"""
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton("❌ Отмена", callback_data=callback_data)]
+            [InlineKeyboardButton(text="❌ Отмена", callback_data=callback_data)]
         ])
     
     @staticmethod
@@ -266,8 +272,8 @@ class Keyboards:
         """Универсальное подтверждение"""
         keyboard = [
             [
-                InlineKeyboardButton("✅ Да", callback_data=f"confirm_{action}_{data}"),
-                InlineKeyboardButton("❌ Нет", callback_data=f"cancel_{action}_{data}")
+                InlineKeyboardButton(text="✅ Да", callback_data=f"confirm_{action}_{data}"),
+                InlineKeyboardButton(text="❌ Нет", callback_data=f"cancel_{action}_{data}")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)

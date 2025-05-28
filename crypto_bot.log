@@ -827,3 +827,1301 @@ client_session: <aiohttp.client.ClientSession object at 0x0000022D860E5BD0>
 2025-05-28 15:38:44,589 - utils.queue - INFO - Message queue processing stopped
 2025-05-28 15:38:44,857 - services.telegram.bot - INFO - Telegram bot stopped
 2025-05-28 15:38:44,858 - __main__ - INFO - Crypto Bot stopped
+2025-05-28 15:39:09,467 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 15:39:09,467 - __main__ - INFO - Starting services...
+2025-05-28 15:39:09,468 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 15:39:09,869 - services.telegram.bot - INFO - Database initialized
+2025-05-28 15:39:09,869 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 15:39:09,872 - cache.memory - INFO - Loaded 0 presets and 0 gas alerts
+2025-05-28 15:39:09,872 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 15:39:09,872 - utils.queue - INFO - Message queue processing started
+2025-05-28 15:39:09,872 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 15:39:10,086 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 15:39:12,483 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 15:39:12,483 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 15:39:13,183 - services.binanceAPI.service - INFO - Fetched 420 active perpetual USDT futures symbols from API
+2025-05-28 15:39:13,183 - cache.symbols_cache - INFO - Symbols cache initialized with 420 symbols
+2025-05-28 15:39:13,184 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 15:39:13,184 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 15:39:13,184 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 15:39:13,184 - services.candle_alerts.websocket - INFO - Generating streams for 420 symbols
+2025-05-28 15:39:13,184 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2520 total streams
+2025-05-28 15:39:13,184 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 15:39:13,184 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 15:39:13,184 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 15:39:13,184 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 15:39:13,184 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 15:39:13,698 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 15:39:14,056 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 15:39:14,208 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 15:39:14,709 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 270 streams... (attempt 1)
+2025-05-28 15:39:14,799 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 15:39:15,210 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 15:39:15,210 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 15:39:15,210 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 15:39:15,210 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 15:39:15,210 - __main__ - INFO - All services started successfully
+2025-05-28 15:39:15,306 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 15:39:15,535 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 15:39:25,863 - aiogram.event - ERROR - Cause exception while process update id=119494160 by bot id=7512410143
+TypeError: BaseModel.__init__() takes 1 positional argument but 2 were given
+Traceback (most recent call last):
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 309, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 158, in feed_update
+    response = await self.update.wrap_outer_middleware(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 56, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\fsm\middleware.py", line 42, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 276, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 146, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 141, in _wrapped
+    return await self._propagate_event(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        observer=observer, update_type=update_type, event=telegram_event, **data
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 166, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "c:\trade_bot\crypto-bot\services\telegram\handlers\start.py", line 37, in cmd_start
+    reply_markup=Keyboards.main_menu(),
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "c:\trade_bot\crypto-bot\services\telegram\keyboards.py", line 15, in main_menu
+    InlineKeyboardButton("📊 Свечные алерты", callback_data="candle_alerts"),
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: BaseModel.__init__() takes 1 positional argument but 2 were given
+2025-05-28 15:41:47,747 - aiogram.event - ERROR - Cause exception while process update id=119494161 by bot id=7512410143
+TypeError: BaseModel.__init__() takes 1 positional argument but 2 were given
+Traceback (most recent call last):
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 309, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 158, in feed_update
+    response = await self.update.wrap_outer_middleware(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 56, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\fsm\middleware.py", line 42, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 276, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 146, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 141, in _wrapped
+    return await self._propagate_event(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        observer=observer, update_type=update_type, event=telegram_event, **data
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 166, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "c:\trade_bot\crypto-bot\services\telegram\handlers\start.py", line 37, in cmd_start
+    reply_markup=Keyboards.main_menu(),
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "c:\trade_bot\crypto-bot\services\telegram\keyboards.py", line 15, in main_menu
+    InlineKeyboardButton("📊 Свечные алерты", callback_data="candle_alerts"),
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: BaseModel.__init__() takes 1 positional argument but 2 were given
+2025-05-28 15:41:58,925 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 15:41:58,925 - __main__ - INFO - Starting services...
+2025-05-28 15:41:58,925 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 15:41:59,339 - services.telegram.bot - INFO - Database initialized
+2025-05-28 15:41:59,339 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 15:41:59,341 - cache.memory - INFO - Loaded 0 presets and 0 gas alerts
+2025-05-28 15:41:59,341 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 15:41:59,341 - utils.queue - INFO - Message queue processing started
+2025-05-28 15:41:59,341 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 15:41:59,564 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 15:42:01,937 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 15:42:01,937 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 15:42:02,387 - services.binanceAPI.service - INFO - Fetched 420 active perpetual USDT futures symbols from API
+2025-05-28 15:42:02,387 - cache.symbols_cache - INFO - Symbols cache initialized with 420 symbols
+2025-05-28 15:42:02,387 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 15:42:02,387 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 15:42:02,387 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 15:42:02,387 - services.candle_alerts.websocket - INFO - Generating streams for 420 symbols
+2025-05-28 15:42:02,388 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2520 total streams
+2025-05-28 15:42:02,388 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 15:42:02,388 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 15:42:02,388 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 15:42:02,388 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 15:42:02,389 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 15:42:02,896 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 15:42:03,266 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 15:42:03,406 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 15:42:03,916 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 270 streams... (attempt 1)
+2025-05-28 15:42:03,993 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 15:42:04,422 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 15:42:04,422 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 15:42:04,422 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 15:42:04,422 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 15:42:04,422 - __main__ - INFO - All services started successfully
+2025-05-28 15:42:04,501 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 15:42:04,748 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 15:42:41,368 - aiogram.event - ERROR - Cause exception while process update id=119494162 by bot id=7512410143
+TypeError: BaseModel.__init__() takes 1 positional argument but 2 were given
+Traceback (most recent call last):
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 309, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 158, in feed_update
+    response = await self.update.wrap_outer_middleware(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 56, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\fsm\middleware.py", line 42, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 276, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 146, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 141, in _wrapped
+    return await self._propagate_event(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        observer=observer, update_type=update_type, event=telegram_event, **data
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 166, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "c:\trade_bot\crypto-bot\services\telegram\handlers\start.py", line 37, in cmd_start
+    reply_markup=Keyboards.main_menu(),
+                 ~~~~~~~~~~~~~~~~~~~^^
+  File "c:\trade_bot\crypto-bot\services\telegram\keyboards.py", line 15, in main_menu
+    InlineKeyboardButton("📊 Свечные алерты", callback_data="candle_alerts"),
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: BaseModel.__init__() takes 1 positional argument but 2 were given
+2025-05-28 15:45:07,946 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 15:45:07,946 - __main__ - INFO - Starting services...
+2025-05-28 15:45:07,946 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 15:45:08,239 - services.telegram.bot - INFO - Database initialized
+2025-05-28 15:45:08,239 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 15:45:08,241 - cache.memory - INFO - Loaded 0 presets and 0 gas alerts
+2025-05-28 15:45:08,242 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 15:45:08,242 - utils.queue - INFO - Message queue processing started
+2025-05-28 15:45:08,242 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 15:45:08,465 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 15:45:10,952 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 15:45:10,952 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 15:45:11,403 - services.binanceAPI.service - INFO - Fetched 420 active perpetual USDT futures symbols from API
+2025-05-28 15:45:11,403 - cache.symbols_cache - INFO - Symbols cache initialized with 420 symbols
+2025-05-28 15:45:11,404 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 15:45:11,404 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 15:45:11,404 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 15:45:11,404 - services.candle_alerts.websocket - INFO - Generating streams for 420 symbols
+2025-05-28 15:45:11,404 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2520 total streams
+2025-05-28 15:45:11,404 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 15:45:11,404 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 15:45:11,404 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 15:45:11,405 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 15:45:11,405 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 15:45:11,911 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 15:45:12,286 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 15:45:12,419 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 15:45:12,928 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 270 streams... (attempt 1)
+2025-05-28 15:45:13,002 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 15:45:13,429 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 15:45:13,429 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 15:45:13,429 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 15:45:13,429 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 15:45:13,429 - __main__ - INFO - All services started successfully
+2025-05-28 15:45:13,508 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 15:45:13,752 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 15:47:32,355 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 15:47:32,355 - __main__ - INFO - Starting services...
+2025-05-28 15:47:32,355 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 15:47:32,641 - services.telegram.bot - INFO - Database initialized
+2025-05-28 15:47:32,641 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 15:47:32,644 - cache.memory - INFO - Loaded 0 presets and 0 gas alerts
+2025-05-28 15:47:32,644 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 15:47:32,644 - utils.queue - INFO - Message queue processing started
+2025-05-28 15:47:32,644 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 15:47:32,859 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 15:47:35,362 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 15:47:35,362 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 15:47:35,811 - services.binanceAPI.service - INFO - Fetched 420 active perpetual USDT futures symbols from API
+2025-05-28 15:47:35,812 - cache.symbols_cache - INFO - Symbols cache initialized with 420 symbols
+2025-05-28 15:47:35,812 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 15:47:35,812 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 15:47:35,812 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 15:47:35,812 - services.candle_alerts.websocket - INFO - Generating streams for 420 symbols
+2025-05-28 15:47:35,813 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2520 total streams
+2025-05-28 15:47:35,813 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 15:47:35,813 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 15:47:35,813 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 15:47:35,813 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 15:47:35,813 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 15:47:36,320 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 15:47:36,687 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 15:47:36,828 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 15:47:37,335 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 270 streams... (attempt 1)
+2025-05-28 15:47:37,416 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 15:47:37,837 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 15:47:37,837 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 15:47:37,837 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 15:47:37,837 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 15:47:37,837 - __main__ - INFO - All services started successfully
+2025-05-28 15:47:37,921 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 15:47:38,155 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 15:47:49,019 - aiogram.event - ERROR - Cause exception while process update id=119494180 by bot id=7512410143
+TelegramBadRequest: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+Traceback (most recent call last):
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 309, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 158, in feed_update
+    response = await self.update.wrap_outer_middleware(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 56, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\fsm\middleware.py", line 42, in __call__
+    return await handler(event, data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\dispatcher.py", line 276, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 146, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 141, in _wrapped
+    return await self._propagate_event(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        observer=observer, update_type=update_type, event=telegram_event, **data
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\router.py", line 166, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\telegram.py", line 121, in trigger
+    return await wrapped_inner(event, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\dispatcher\event\handler.py", line 43, in call
+    return await wrapped()
+           ^^^^^^^^^^^^^^^
+  File "c:\trade_bot\crypto-bot\services\telegram\handlers\candle_alerts.py", line 389, in preset_list
+    await callback.message.edit_text(
+    ...<4 lines>...
+    )
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\methods\base.py", line 84, in emit
+    return await bot(self)
+           ^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\client\bot.py", line 478, in __call__
+    return await self.session(self, method, timeout=request_timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\client\session\base.py", line 254, in __call__
+    return cast(TelegramType, await middleware(bot, method))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\client\session\aiohttp.py", line 185, in make_request
+    response = self.check_response(
+        bot=bot, method=method, status_code=resp.status, content=raw_result
+    )
+  File "C:\Users\drago\AppData\Local\Programs\Python\Python313\Lib\site-packages\aiogram\client\session\base.py", line 120, in check_response
+    raise TelegramBadRequest(method=method, message=description)
+aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
+2025-05-28 15:48:56,085 - services.telegram.handlers.common - WARNING - Unknown callback: preset_edit_1
+2025-05-28 15:58:06,544 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 15:58:06,544 - __main__ - INFO - Starting services...
+2025-05-28 15:58:06,544 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 15:58:06,947 - services.telegram.bot - INFO - Database initialized
+2025-05-28 15:58:06,948 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 15:58:06,951 - cache.memory - INFO - Loaded 2 presets and 1 gas alerts
+2025-05-28 15:58:06,951 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 15:58:06,951 - utils.queue - INFO - Message queue processing started
+2025-05-28 15:58:06,951 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 15:58:07,164 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 15:58:09,550 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 15:58:09,550 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 15:58:10,009 - services.binanceAPI.service - INFO - Fetched 420 active perpetual USDT futures symbols from API
+2025-05-28 15:58:10,009 - cache.symbols_cache - INFO - Symbols cache initialized with 420 symbols
+2025-05-28 15:58:10,009 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 15:58:10,009 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 15:58:10,009 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 15:58:10,009 - services.candle_alerts.websocket - INFO - Generating streams for 420 symbols
+2025-05-28 15:58:10,010 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2520 total streams
+2025-05-28 15:58:10,010 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 15:58:10,010 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 15:58:10,010 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 15:58:10,010 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 15:58:10,010 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 15:58:10,517 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 15:58:10,886 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 15:58:11,018 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 15:58:11,527 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 270 streams... (attempt 1)
+2025-05-28 15:58:11,614 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 15:58:12,029 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 15:58:12,029 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 15:58:12,029 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 15:58:12,029 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 15:58:12,029 - __main__ - INFO - All services started successfully
+2025-05-28 15:58:12,119 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 15:58:12,349 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 16:01:30,546 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 16:01:30,546 - __main__ - INFO - Starting services...
+2025-05-28 16:01:30,546 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 16:01:30,848 - services.telegram.bot - INFO - Database initialized
+2025-05-28 16:01:30,848 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 16:01:30,852 - cache.memory - INFO - Loaded 2 presets and 1 gas alerts
+2025-05-28 16:01:30,852 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 16:01:30,852 - utils.queue - INFO - Message queue processing started
+2025-05-28 16:01:30,852 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 16:01:31,069 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 16:01:33,555 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 16:01:33,556 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 16:01:34,035 - services.binanceAPI.service - INFO - Fetched 421 active perpetual USDT futures symbols from API
+2025-05-28 16:01:34,035 - cache.symbols_cache - INFO - Symbols cache initialized with 421 symbols
+2025-05-28 16:01:34,035 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 16:01:34,036 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 16:01:34,036 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 16:01:34,036 - services.candle_alerts.websocket - INFO - Generating streams for 421 symbols
+2025-05-28 16:01:34,036 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2526 total streams
+2025-05-28 16:01:34,036 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 16:01:34,036 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 16:01:34,036 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 16:01:34,036 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 16:01:34,036 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 16:01:34,545 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 16:01:34,909 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 16:01:35,055 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 16:01:35,564 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 276 streams... (attempt 1)
+2025-05-28 16:01:35,641 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 16:01:36,071 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 16:01:36,071 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 16:01:36,072 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 16:01:36,072 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 16:01:36,072 - __main__ - INFO - All services started successfully
+2025-05-28 16:01:36,147 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 16:01:36,400 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 16:06:55,367 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 16:06:55,367 - __main__ - INFO - Starting services...
+2025-05-28 16:06:55,367 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 16:06:55,656 - services.telegram.bot - INFO - Database initialized
+2025-05-28 16:06:55,656 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 16:06:55,659 - cache.memory - INFO - Loaded 3 presets and 1 gas alerts
+2025-05-28 16:06:55,660 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 16:06:55,660 - utils.queue - INFO - Message queue processing started
+2025-05-28 16:06:55,660 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 16:06:55,886 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 16:06:58,376 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 16:06:58,376 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 16:06:58,826 - services.binanceAPI.service - INFO - Fetched 421 active perpetual USDT futures symbols from API
+2025-05-28 16:06:58,827 - cache.symbols_cache - INFO - Symbols cache initialized with 421 symbols
+2025-05-28 16:06:58,827 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 16:06:58,827 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 16:06:58,827 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 16:06:58,827 - services.candle_alerts.websocket - INFO - Generating streams for 421 symbols
+2025-05-28 16:06:58,827 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2526 total streams
+2025-05-28 16:06:58,827 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 16:06:58,827 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 16:06:58,827 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 16:06:58,827 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 16:06:58,828 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 16:06:59,331 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 16:06:59,701 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 16:06:59,836 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 16:07:00,351 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 276 streams... (attempt 1)
+2025-05-28 16:07:00,429 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 16:07:00,856 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 16:07:00,856 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 16:07:00,856 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 16:07:00,856 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 16:07:00,856 - __main__ - INFO - All services started successfully
+2025-05-28 16:07:01,173 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 16:07:01,557 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 16:07:28,581 - cache.memory - INFO - Activated preset 4
+2025-05-28 16:10:31,747 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 16:10:31,747 - __main__ - INFO - Starting services...
+2025-05-28 16:10:31,747 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 16:10:32,038 - services.telegram.bot - INFO - Database initialized
+2025-05-28 16:10:32,038 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 16:10:32,040 - cache.memory - INFO - Loaded active preset 1 with 50 pairs and 1 intervals
+2025-05-28 16:10:32,040 - cache.memory - INFO - Loaded active preset 2 with 50 pairs and 1 intervals
+2025-05-28 16:10:32,040 - cache.memory - INFO - Loaded active preset 3 with 250 pairs and 1 intervals
+2025-05-28 16:10:32,040 - cache.memory - INFO - Loaded active preset 4 with 250 pairs and 1 intervals
+2025-05-28 16:10:32,041 - cache.memory - INFO - Loaded 4 presets and 1 gas alerts
+2025-05-28 16:10:32,041 - cache.memory - INFO - Total active subscriptions: 300
+2025-05-28 16:10:32,042 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 16:10:32,042 - utils.queue - INFO - Message queue processing started
+2025-05-28 16:10:32,042 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 16:10:32,277 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 16:10:34,751 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 16:10:34,751 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 16:10:35,224 - services.binanceAPI.service - INFO - Fetched 421 active perpetual USDT futures symbols from API
+2025-05-28 16:10:35,225 - cache.symbols_cache - INFO - Symbols cache initialized with 421 symbols
+2025-05-28 16:10:35,225 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 16:10:35,225 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 16:10:35,225 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 16:10:35,225 - services.candle_alerts.websocket - INFO - Generating streams for 421 symbols
+2025-05-28 16:10:35,225 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2526 total streams
+2025-05-28 16:10:35,225 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 16:10:35,225 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 16:10:35,226 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 16:10:35,226 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 16:10:35,226 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 16:10:35,729 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 16:10:36,114 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 16:10:36,237 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 16:10:36,744 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 276 streams... (attempt 1)
+2025-05-28 16:10:36,822 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 16:10:37,253 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 16:10:37,253 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 16:10:37,253 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 16:10:37,253 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 16:10:37,253 - __main__ - INFO - All services started successfully
+2025-05-28 16:10:37,331 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 16:10:37,563 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 16:10:45,852 - cache.memory - INFO - Deactivated preset 4
+2025-05-28 16:10:47,679 - cache.memory - INFO - Activated preset 4
+2025-05-28 16:11:02,125 - services.candle_alerts.processor - INFO - Found 1 subscribers for OMUSDT 1m
+2025-05-28 16:11:02,130 - services.candle_alerts.processor - INFO - Found 1 subscribers for FXSUSDT 1m
+2025-05-28 16:11:02,130 - services.candle_alerts.processor - INFO - Found 1 subscribers for TONUSDT 1m
+2025-05-28 16:11:02,130 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TONUSDT 1m 0.13266717% >= 0.1%
+2025-05-28 16:11:02,130 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TONUSDT 1m 0.13266717% >= 0.11%
+2025-05-28 16:11:02,131 - services.candle_alerts.processor - INFO - Sending 2 alerts for TONUSDT 1m
+2025-05-28 16:11:02,141 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHUSDT 1m
+2025-05-28 16:11:02,141 - services.candle_alerts.processor - INFO - Found 1 subscribers for ROSEUSDT 1m
+2025-05-28 16:11:02,141 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ROSEUSDT 1m 0.25699600% >= 0.1%
+2025-05-28 16:11:02,141 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ROSEUSDT 1m 0.25699600% >= 0.11%
+2025-05-28 16:11:02,141 - services.candle_alerts.processor - INFO - Sending 2 alerts for ROSEUSDT 1m
+2025-05-28 16:11:02,142 - services.candle_alerts.processor - INFO - Found 1 subscribers for MKRUSDT 1m
+2025-05-28 16:11:02,142 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MKRUSDT 1m 0.12413549% >= 0.1%
+2025-05-28 16:11:02,142 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MKRUSDT 1m 0.12413549% >= 0.1%
+2025-05-28 16:11:02,142 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MKRUSDT 1m 0.12413549% >= 0.11%
+2025-05-28 16:11:02,142 - services.candle_alerts.processor - INFO - Sending 3 alerts for MKRUSDT 1m
+2025-05-28 16:11:02,150 - services.candle_alerts.processor - INFO - Found 1 subscribers for PIXELUSDT 1m
+2025-05-28 16:11:02,150 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: PIXELUSDT 1m -0.12420156% >= 0.1%
+2025-05-28 16:11:02,150 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: PIXELUSDT 1m -0.12420156% >= 0.11%
+2025-05-28 16:11:02,150 - services.candle_alerts.processor - INFO - Sending 2 alerts for PIXELUSDT 1m
+2025-05-28 16:11:02,161 - services.candle_alerts.processor - INFO - Found 1 subscribers for ADAUSDT 1m
+2025-05-28 16:11:02,161 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000PEPEUSDT 1m
+2025-05-28 16:11:02,161 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: 1000PEPEUSDT 1m 0.32127829% >= 0.1%
+2025-05-28 16:11:02,161 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: 1000PEPEUSDT 1m 0.32127829% >= 0.11%
+2025-05-28 16:11:02,161 - services.candle_alerts.processor - INFO - Sending 2 alerts for 1000PEPEUSDT 1m
+2025-05-28 16:11:02,171 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000BONKUSDT 1m
+2025-05-28 16:11:02,172 - services.candle_alerts.processor - INFO - Found 1 subscribers for FETUSDT 1m
+2025-05-28 16:11:02,203 - services.candle_alerts.processor - INFO - Found 1 subscribers for TURBOUSDT 1m
+2025-05-28 16:11:02,203 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TURBOUSDT 1m -0.17610301% >= 0.1%
+2025-05-28 16:11:02,203 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TURBOUSDT 1m -0.17610301% >= 0.11%
+2025-05-28 16:11:02,204 - services.candle_alerts.processor - INFO - Sending 2 alerts for TURBOUSDT 1m
+2025-05-28 16:11:02,204 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000SHIBUSDT 1m
+2025-05-28 16:11:02,205 - services.candle_alerts.processor - INFO - Found 1 subscribers for XRPUSDT 1m
+2025-05-28 16:11:02,228 - services.candle_alerts.processor - INFO - Found 1 subscribers for CAKEUSDT 1m
+2025-05-28 16:11:02,235 - services.candle_alerts.processor - INFO - Found 1 subscribers for WIFUSDT 1m
+2025-05-28 16:11:02,260 - services.candle_alerts.processor - INFO - Found 1 subscribers for GALAUSDT 1m
+2025-05-28 16:11:02,260 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: GALAUSDT 1m -0.15228426% >= 0.1%
+2025-05-28 16:11:02,260 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: GALAUSDT 1m -0.15228426% >= 0.11%
+2025-05-28 16:11:02,261 - services.candle_alerts.processor - INFO - Sending 2 alerts for GALAUSDT 1m
+2025-05-28 16:11:02,267 - services.candle_alerts.processor - INFO - Found 1 subscribers for SEIUSDT 1m
+2025-05-28 16:11:02,274 - services.candle_alerts.processor - INFO - Found 1 subscribers for SYNUSDT 1m
+2025-05-28 16:11:02,279 - services.candle_alerts.processor - INFO - Found 1 subscribers for HFTUSDT 1m
+2025-05-28 16:11:02,279 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: HFTUSDT 1m 0.42251601% >= 0.1%
+2025-05-28 16:11:02,279 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: HFTUSDT 1m 0.42251601% >= 0.11%
+2025-05-28 16:11:02,279 - services.candle_alerts.processor - INFO - Sending 2 alerts for HFTUSDT 1m
+2025-05-28 16:11:02,280 - services.candle_alerts.processor - INFO - Found 1 subscribers for XMRUSDT 1m
+2025-05-28 16:11:02,280 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XMRUSDT 1m -0.11342691% >= 0.1%
+2025-05-28 16:11:02,280 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XMRUSDT 1m -0.11342691% >= 0.1%
+2025-05-28 16:11:02,280 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XMRUSDT 1m -0.11342691% >= 0.11%
+2025-05-28 16:11:02,280 - services.candle_alerts.processor - INFO - Sending 3 alerts for XMRUSDT 1m
+2025-05-28 16:11:02,284 - services.candle_alerts.processor - INFO - Found 1 subscribers for WOOUSDT 1m
+2025-05-28 16:11:02,290 - services.candle_alerts.processor - INFO - Found 1 subscribers for MASKUSDT 1m
+2025-05-28 16:11:02,290 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MASKUSDT 1m 0.23540272% >= 0.1%
+2025-05-28 16:11:02,290 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MASKUSDT 1m 0.23540272% >= 0.11%
+2025-05-28 16:11:02,290 - services.candle_alerts.processor - INFO - Sending 2 alerts for MASKUSDT 1m
+2025-05-28 16:11:02,290 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZILUSDT 1m
+2025-05-28 16:11:02,291 - services.candle_alerts.processor - INFO - Found 1 subscribers for STRKUSDT 1m
+2025-05-28 16:11:02,291 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: STRKUSDT 1m -0.11961722% >= 0.1%
+2025-05-28 16:11:02,291 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: STRKUSDT 1m -0.11961722% >= 0.11%
+2025-05-28 16:11:02,291 - services.candle_alerts.processor - INFO - Sending 2 alerts for STRKUSDT 1m
+2025-05-28 16:11:02,295 - services.candle_alerts.processor - INFO - Found 1 subscribers for TIAUSDT 1m
+2025-05-28 16:11:02,300 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHFIUSDT 1m
+2025-05-28 16:11:02,300 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ETHFIUSDT 1m 0.13454185% >= 0.1%
+2025-05-28 16:11:02,300 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ETHFIUSDT 1m 0.13454185% >= 0.11%
+2025-05-28 16:11:02,300 - services.candle_alerts.processor - INFO - Sending 2 alerts for ETHFIUSDT 1m
+2025-05-28 16:11:02,317 - services.candle_alerts.processor - INFO - Found 1 subscribers for AVAXUSDT 1m
+2025-05-28 16:11:02,323 - services.candle_alerts.processor - INFO - Found 1 subscribers for OXTUSDT 1m
+2025-05-28 16:11:02,323 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OXTUSDT 1m 0.21127905% >= 0.1%
+2025-05-28 16:11:02,323 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OXTUSDT 1m 0.21127905% >= 0.11%
+2025-05-28 16:11:02,323 - services.candle_alerts.processor - INFO - Sending 2 alerts for OXTUSDT 1m
+2025-05-28 16:11:02,338 - services.candle_alerts.processor - INFO - Found 1 subscribers for YGGUSDT 1m
+2025-05-28 16:11:02,338 - services.candle_alerts.processor - INFO - Found 1 subscribers for TRBUSDT 1m
+2025-05-28 16:11:02,338 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.11330298% >= 0.1%
+2025-05-28 16:11:02,338 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.11330298% >= 0.1%
+2025-05-28 16:11:02,339 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.11330298% >= 0.11%
+2025-05-28 16:11:02,339 - services.candle_alerts.processor - INFO - Sending 3 alerts for TRBUSDT 1m
+2025-05-28 16:11:02,348 - services.candle_alerts.processor - INFO - Found 1 subscribers for AAVEUSDT 1m
+2025-05-28 16:11:02,385 - services.candle_alerts.processor - INFO - Found 1 subscribers for UNIUSDT 1m
+2025-05-28 16:11:02,400 - services.candle_alerts.processor - INFO - Found 1 subscribers for XVGUSDT 1m
+2025-05-28 16:11:02,400 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XVGUSDT 1m -0.33130372% >= 0.1%
+2025-05-28 16:11:02,401 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XVGUSDT 1m -0.33130372% >= 0.11%
+2025-05-28 16:11:02,401 - services.candle_alerts.processor - INFO - Sending 2 alerts for XVGUSDT 1m
+2025-05-28 16:11:02,409 - services.candle_alerts.processor - INFO - Found 1 subscribers for IDUSDT 1m
+2025-05-28 16:11:02,409 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IDUSDT 1m -0.10616736% >= 0.1%
+2025-05-28 16:11:02,409 - services.candle_alerts.processor - INFO - Sending 1 alerts for IDUSDT 1m
+2025-05-28 16:11:02,425 - services.candle_alerts.processor - INFO - Found 1 subscribers for MOVRUSDT 1m
+2025-05-28 16:11:02,430 - services.candle_alerts.processor - INFO - Found 1 subscribers for NOTUSDT 1m
+2025-05-28 16:11:02,430 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: NOTUSDT 1m 0.13253810% >= 0.1%
+2025-05-28 16:11:02,430 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: NOTUSDT 1m 0.13253810% >= 0.11%
+2025-05-28 16:11:02,430 - services.candle_alerts.processor - INFO - Sending 2 alerts for NOTUSDT 1m
+2025-05-28 16:11:02,440 - services.candle_alerts.processor - INFO - Found 1 subscribers for ORDIUSDT 1m
+2025-05-28 16:11:02,455 - services.candle_alerts.processor - INFO - Found 1 subscribers for BNBUSDT 1m
+2025-05-28 16:11:02,463 - services.candle_alerts.processor - INFO - Found 1 subscribers for TRXUSDT 1m
+2025-05-28 16:11:02,464 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOGSUSDT 1m
+2025-05-28 16:11:02,464 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DOGSUSDT 1m -0.49875312% >= 0.1%
+2025-05-28 16:11:02,464 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DOGSUSDT 1m -0.49875312% >= 0.11%
+2025-05-28 16:11:02,464 - services.candle_alerts.processor - INFO - Sending 2 alerts for DOGSUSDT 1m
+2025-05-28 16:11:02,465 - services.candle_alerts.processor - INFO - Found 1 subscribers for DUSKUSDT 1m
+2025-05-28 16:11:02,465 - services.candle_alerts.processor - INFO - Found 1 subscribers for SUNUSDT 1m
+2025-05-28 16:11:02,465 - services.candle_alerts.processor - INFO - Found 1 subscribers for GLMUSDT 1m
+2025-05-28 16:11:02,469 - services.candle_alerts.processor - INFO - Found 1 subscribers for ILVUSDT 1m
+2025-05-28 16:11:02,469 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ILVUSDT 1m 0.19475551% >= 0.1%
+2025-05-28 16:11:02,469 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ILVUSDT 1m 0.19475551% >= 0.11%
+2025-05-28 16:11:02,469 - services.candle_alerts.processor - INFO - Sending 2 alerts for ILVUSDT 1m
+2025-05-28 16:11:02,469 - services.candle_alerts.processor - INFO - Found 1 subscribers for LINKUSDT 1m
+2025-05-28 16:11:02,475 - services.candle_alerts.processor - INFO - Found 1 subscribers for NMRUSDT 1m
+2025-05-28 16:11:02,477 - services.candle_alerts.processor - INFO - Found 1 subscribers for BELUSDT 1m
+2025-05-28 16:11:02,477 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BELUSDT 1m 0.11823825% >= 0.1%
+2025-05-28 16:11:02,478 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BELUSDT 1m 0.11823825% >= 0.11%
+2025-05-28 16:11:02,478 - services.candle_alerts.processor - INFO - Sending 2 alerts for BELUSDT 1m
+2025-05-28 16:11:02,484 - services.candle_alerts.processor - INFO - Found 1 subscribers for LISTAUSDT 1m
+2025-05-28 16:11:02,484 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LISTAUSDT 1m -0.14609204% >= 0.1%
+2025-05-28 16:11:02,484 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LISTAUSDT 1m -0.14609204% >= 0.11%
+2025-05-28 16:11:02,485 - services.candle_alerts.processor - INFO - Sending 2 alerts for LISTAUSDT 1m
+2025-05-28 16:11:02,485 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOTUSDT 1m
+2025-05-28 16:11:02,485 - services.candle_alerts.processor - INFO - Found 1 subscribers for ENAUSDT 1m
+2025-05-28 16:11:02,486 - services.candle_alerts.processor - INFO - Found 1 subscribers for SOLUSDT 1m
+2025-05-28 16:11:02,499 - services.candle_alerts.processor - INFO - Found 1 subscribers for DYDXUSDT 1m
+2025-05-28 16:11:02,499 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DYDXUSDT 1m 0.15552100% >= 0.1%
+2025-05-28 16:11:02,499 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DYDXUSDT 1m 0.15552100% >= 0.11%
+2025-05-28 16:11:02,499 - services.candle_alerts.processor - INFO - Sending 2 alerts for DYDXUSDT 1m
+2025-05-28 16:11:02,500 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000SATSUSDT 1m
+2025-05-28 16:11:02,500 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: 1000SATSUSDT 1m 0.34013605% >= 0.1%
+2025-05-28 16:11:02,500 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: 1000SATSUSDT 1m 0.34013605% >= 0.11%
+2025-05-28 16:11:02,500 - services.candle_alerts.processor - INFO - Sending 2 alerts for 1000SATSUSDT 1m
+2025-05-28 16:11:02,501 - services.candle_alerts.processor - INFO - Found 1 subscribers for QNTUSDT 1m
+2025-05-28 16:11:02,501 - services.candle_alerts.processor - INFO - Found 1 subscribers for C98USDT 1m
+2025-05-28 16:11:02,501 - services.candle_alerts.processor - INFO - Found 1 subscribers for PORTALUSDT 1m
+2025-05-28 16:11:02,501 - services.candle_alerts.processor - INFO - Found 1 subscribers for OGNUSDT 1m
+2025-05-28 16:11:02,502 - services.candle_alerts.processor - INFO - Found 1 subscribers for ALTUSDT 1m
+2025-05-28 16:11:02,505 - services.candle_alerts.processor - INFO - Found 1 subscribers for THETAUSDT 1m
+2025-05-28 16:11:02,505 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: THETAUSDT 1m -0.10107817% >= 0.1%
+2025-05-28 16:11:02,505 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: THETAUSDT 1m -0.10107817% >= 0.1%
+2025-05-28 16:11:02,505 - services.candle_alerts.processor - INFO - Sending 2 alerts for THETAUSDT 1m
+2025-05-28 16:11:02,505 - services.candle_alerts.processor - INFO - Found 1 subscribers for APTUSDT 1m
+2025-05-28 16:11:02,506 - services.candle_alerts.processor - INFO - Found 1 subscribers for PHBUSDT 1m
+2025-05-28 16:11:02,506 - services.candle_alerts.processor - INFO - Found 1 subscribers for AIUSDT 1m
+2025-05-28 16:11:02,529 - services.candle_alerts.processor - INFO - Found 1 subscribers for CELRUSDT 1m
+2025-05-28 16:11:02,544 - services.candle_alerts.processor - INFO - Found 1 subscribers for LUNA2USDT 1m
+2025-05-28 16:11:02,544 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LUNA2USDT 1m 0.10209290% >= 0.1%
+2025-05-28 16:11:02,544 - services.candle_alerts.processor - INFO - Sending 1 alerts for LUNA2USDT 1m
+2025-05-28 16:11:02,551 - services.candle_alerts.processor - INFO - Found 1 subscribers for INJUSDT 1m
+2025-05-28 16:11:02,551 - services.candle_alerts.processor - INFO - Found 1 subscribers for NEOUSDT 1m
+2025-05-28 16:11:02,557 - services.candle_alerts.processor - INFO - Found 1 subscribers for POPCATUSDT 1m
+2025-05-28 16:11:02,579 - services.candle_alerts.processor - INFO - Found 1 subscribers for BIGTIMEUSDT 1m
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BIGTIMEUSDT 1m 0.26023832% >= 0.1%
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BIGTIMEUSDT 1m 0.26023832% >= 0.11%
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Sending 2 alerts for BIGTIMEUSDT 1m
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Found 1 subscribers for REZUSDT 1m
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: REZUSDT 1m 0.14084507% >= 0.1%
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: REZUSDT 1m 0.14084507% >= 0.11%
+2025-05-28 16:11:02,580 - services.candle_alerts.processor - INFO - Sending 2 alerts for REZUSDT 1m
+2025-05-28 16:17:36,211 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 16:17:36,211 - __main__ - INFO - Starting services...
+2025-05-28 16:17:36,211 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 16:17:36,499 - services.telegram.bot - INFO - Database initialized
+2025-05-28 16:17:36,500 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 16:17:36,502 - cache.memory - INFO - Loaded active preset 1 with 50 pairs and 1 intervals
+2025-05-28 16:17:36,502 - cache.memory - INFO - Loaded active preset 2 with 50 pairs and 1 intervals
+2025-05-28 16:17:36,502 - cache.memory - INFO - Loaded active preset 3 with 250 pairs and 1 intervals
+2025-05-28 16:17:36,502 - cache.memory - INFO - Loaded active preset 4 with 250 pairs and 1 intervals
+2025-05-28 16:17:36,503 - cache.memory - INFO - Loaded 4 presets and 1 gas alerts
+2025-05-28 16:17:36,504 - cache.memory - INFO - Total active subscriptions: 300
+2025-05-28 16:17:36,504 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 16:17:36,504 - utils.queue - INFO - Message queue processing started
+2025-05-28 16:17:36,504 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 16:17:36,717 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 16:17:39,215 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 16:17:39,215 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 16:17:39,672 - services.binanceAPI.service - INFO - Fetched 421 active perpetual USDT futures symbols from API
+2025-05-28 16:17:39,673 - cache.symbols_cache - INFO - Symbols cache initialized with 421 symbols
+2025-05-28 16:17:39,673 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 16:17:39,673 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 16:17:39,673 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 16:17:39,673 - services.candle_alerts.websocket - INFO - Generating streams for 421 symbols
+2025-05-28 16:17:39,673 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2526 total streams
+2025-05-28 16:17:39,673 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 16:17:39,673 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 16:17:39,673 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 16:17:39,674 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 16:17:39,674 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 16:17:40,175 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 16:17:40,547 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 16:17:40,682 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 16:17:41,191 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 276 streams... (attempt 1)
+2025-05-28 16:17:41,266 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 16:17:41,698 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 16:17:41,698 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 16:17:41,698 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 16:17:41,698 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 16:17:41,698 - __main__ - INFO - All services started successfully
+2025-05-28 16:17:41,782 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 16:17:42,015 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 16:18:02,111 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHUSDT 1m
+2025-05-28 16:18:02,118 - services.candle_alerts.processor - INFO - Found 1 subscribers for ANKRUSDT 1m
+2025-05-28 16:18:02,129 - services.candle_alerts.processor - INFO - Found 1 subscribers for RDNTUSDT 1m
+2025-05-28 16:18:02,130 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000PEPEUSDT 1m
+2025-05-28 16:18:02,130 - services.candle_alerts.processor - INFO - Found 1 subscribers for OPUSDT 1m
+2025-05-28 16:18:02,130 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OPUSDT 1m -0.12755102% >= 0.1%
+2025-05-28 16:18:02,130 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OPUSDT 1m -0.12755102% >= 0.11%
+2025-05-28 16:18:02,130 - services.candle_alerts.processor - INFO - Sending 2 alerts for OPUSDT 1m
+2025-05-28 16:18:02,130 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,130 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 2
+2025-05-28 16:18:02,131 - services.candle_alerts.processor - INFO - Found 1 subscribers for LTCUSDT 1m
+2025-05-28 16:18:02,142 - services.candle_alerts.processor - INFO - Found 1 subscribers for MKRUSDT 1m
+2025-05-28 16:18:02,142 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MKRUSDT 1m 0.22506515% >= 0.1%
+2025-05-28 16:18:02,142 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MKRUSDT 1m 0.22506515% >= 0.1%
+2025-05-28 16:18:02,142 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MKRUSDT 1m 0.22506515% >= 0.11%
+2025-05-28 16:18:02,142 - services.candle_alerts.processor - INFO - Sending 3 alerts for MKRUSDT 1m
+2025-05-28 16:18:02,142 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:18:02,142 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 5
+2025-05-28 16:18:02,143 - services.candle_alerts.processor - INFO - Found 1 subscribers for OMNIUSDT 1m
+2025-05-28 16:18:02,143 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OMNIUSDT 1m -0.17674090% >= 0.1%
+2025-05-28 16:18:02,143 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OMNIUSDT 1m -0.17674090% >= 0.11%
+2025-05-28 16:18:02,143 - services.candle_alerts.processor - INFO - Sending 2 alerts for OMNIUSDT 1m
+2025-05-28 16:18:02,143 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,143 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 7
+2025-05-28 16:18:02,144 - services.candle_alerts.processor - INFO - Found 1 subscribers for CAKEUSDT 1m
+2025-05-28 16:18:02,153 - services.candle_alerts.processor - INFO - Found 1 subscribers for ENAUSDT 1m
+2025-05-28 16:18:02,153 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ENAUSDT 1m -0.12475050% >= 0.1%
+2025-05-28 16:18:02,153 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ENAUSDT 1m -0.12475050% >= 0.11%
+2025-05-28 16:18:02,153 - services.candle_alerts.processor - INFO - Sending 2 alerts for ENAUSDT 1m
+2025-05-28 16:18:02,154 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,154 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 9
+2025-05-28 16:18:02,154 - services.candle_alerts.processor - INFO - Found 1 subscribers for TONUSDT 1m
+2025-05-28 16:18:02,154 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TONUSDT 1m -0.44340791% >= 0.1%
+2025-05-28 16:18:02,154 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TONUSDT 1m -0.44340791% >= 0.11%
+2025-05-28 16:18:02,154 - services.candle_alerts.processor - INFO - Sending 2 alerts for TONUSDT 1m
+2025-05-28 16:18:02,154 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,154 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 11
+2025-05-28 16:18:02,183 - services.candle_alerts.processor - INFO - Found 1 subscribers for JUPUSDT 1m
+2025-05-28 16:18:02,202 - services.candle_alerts.processor - INFO - Found 1 subscribers for ARKMUSDT 1m
+2025-05-28 16:18:02,203 - services.candle_alerts.processor - INFO - Found 1 subscribers for GALAUSDT 1m
+2025-05-28 16:18:02,203 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: GALAUSDT 1m -0.15313936% >= 0.1%
+2025-05-28 16:18:02,204 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: GALAUSDT 1m -0.15313936% >= 0.11%
+2025-05-28 16:18:02,204 - services.candle_alerts.processor - INFO - Sending 2 alerts for GALAUSDT 1m
+2025-05-28 16:18:02,204 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,204 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 13
+2025-05-28 16:18:02,207 - services.candle_alerts.processor - INFO - Found 1 subscribers for SOLUSDT 1m
+2025-05-28 16:18:02,208 - services.candle_alerts.processor - INFO - Found 1 subscribers for PEOPLEUSDT 1m
+2025-05-28 16:18:02,208 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: PEOPLEUSDT 1m -0.20169423% >= 0.1%
+2025-05-28 16:18:02,208 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: PEOPLEUSDT 1m -0.20169423% >= 0.11%
+2025-05-28 16:18:02,208 - services.candle_alerts.processor - INFO - Sending 2 alerts for PEOPLEUSDT 1m
+2025-05-28 16:18:02,208 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,208 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 15
+2025-05-28 16:18:02,210 - services.candle_alerts.processor - INFO - Found 1 subscribers for SUIUSDT 1m
+2025-05-28 16:18:02,213 - services.candle_alerts.processor - INFO - Found 1 subscribers for UNIUSDT 1m
+2025-05-28 16:18:02,219 - services.candle_alerts.processor - INFO - Found 1 subscribers for FILUSDT 1m
+2025-05-28 16:18:02,220 - services.candle_alerts.processor - INFO - Found 1 subscribers for ONDOUSDT 1m
+2025-05-28 16:18:02,224 - services.candle_alerts.processor - INFO - Found 1 subscribers for NOTUSDT 1m
+2025-05-28 16:18:02,225 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: NOTUSDT 1m -0.56704470% >= 0.1%
+2025-05-28 16:18:02,225 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: NOTUSDT 1m -0.56704470% >= 0.11%
+2025-05-28 16:18:02,225 - services.candle_alerts.processor - INFO - Sending 2 alerts for NOTUSDT 1m
+2025-05-28 16:18:02,225 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,225 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 17
+2025-05-28 16:18:02,232 - services.candle_alerts.processor - INFO - Found 1 subscribers for BTCUSDT 1m
+2025-05-28 16:18:02,243 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000FLOKIUSDT 1m
+2025-05-28 16:18:02,251 - services.candle_alerts.processor - INFO - Found 1 subscribers for MEMEUSDT 1m
+2025-05-28 16:18:02,251 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MEMEUSDT 1m -0.25651988% >= 0.1%
+2025-05-28 16:18:02,251 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MEMEUSDT 1m -0.25651988% >= 0.11%
+2025-05-28 16:18:02,251 - services.candle_alerts.processor - INFO - Sending 2 alerts for MEMEUSDT 1m
+2025-05-28 16:18:02,252 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,252 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 19
+2025-05-28 16:18:02,252 - services.candle_alerts.processor - INFO - Found 1 subscribers for LEVERUSDT 1m
+2025-05-28 16:18:02,265 - services.candle_alerts.processor - INFO - Found 1 subscribers for ORDIUSDT 1m
+2025-05-28 16:18:02,266 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ORDIUSDT 1m -0.11869978% >= 0.1%
+2025-05-28 16:18:02,266 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ORDIUSDT 1m -0.11869978% >= 0.11%
+2025-05-28 16:18:02,266 - services.candle_alerts.processor - INFO - Sending 2 alerts for ORDIUSDT 1m
+2025-05-28 16:18:02,266 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,266 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 21
+2025-05-28 16:18:02,271 - services.candle_alerts.processor - INFO - Found 1 subscribers for SYNUSDT 1m
+2025-05-28 16:18:02,271 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SYNUSDT 1m -0.34030141% >= 0.1%
+2025-05-28 16:18:02,271 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SYNUSDT 1m -0.34030141% >= 0.11%
+2025-05-28 16:18:02,272 - services.candle_alerts.processor - INFO - Sending 2 alerts for SYNUSDT 1m
+2025-05-28 16:18:02,272 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,272 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 23
+2025-05-28 16:18:02,274 - services.candle_alerts.processor - INFO - Found 1 subscribers for NKNUSDT 1m
+2025-05-28 16:18:02,284 - services.candle_alerts.processor - INFO - Found 1 subscribers for NFPUSDT 1m
+2025-05-28 16:18:02,290 - services.candle_alerts.processor - INFO - Found 1 subscribers for MEWUSDT 1m
+2025-05-28 16:18:02,290 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MEWUSDT 1m -0.15151515% >= 0.1%
+2025-05-28 16:18:02,290 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: MEWUSDT 1m -0.15151515% >= 0.11%
+2025-05-28 16:18:02,290 - services.candle_alerts.processor - INFO - Sending 2 alerts for MEWUSDT 1m
+2025-05-28 16:18:02,290 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,290 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 25
+2025-05-28 16:18:02,291 - services.candle_alerts.processor - INFO - Found 1 subscribers for MASKUSDT 1m
+2025-05-28 16:18:02,295 - services.candle_alerts.processor - INFO - Found 1 subscribers for XLMUSDT 1m
+2025-05-28 16:18:02,298 - services.candle_alerts.processor - INFO - Found 1 subscribers for POPCATUSDT 1m
+2025-05-28 16:18:02,298 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: POPCATUSDT 1m -0.10752688% >= 0.1%
+2025-05-28 16:18:02,298 - services.candle_alerts.processor - INFO - Sending 1 alerts for POPCATUSDT 1m
+2025-05-28 16:18:02,298 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:18:02,298 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 26
+2025-05-28 16:18:02,299 - services.candle_alerts.processor - INFO - Found 1 subscribers for OXTUSDT 1m
+2025-05-28 16:18:02,302 - services.candle_alerts.processor - INFO - Found 1 subscribers for AVAXUSDT 1m
+2025-05-28 16:18:02,302 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: AVAXUSDT 1m -0.10645093% >= 0.1%
+2025-05-28 16:18:02,303 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: AVAXUSDT 1m -0.10645093% >= 0.1%
+2025-05-28 16:18:02,303 - services.candle_alerts.processor - INFO - Sending 2 alerts for AVAXUSDT 1m
+2025-05-28 16:18:02,303 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,303 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 28
+2025-05-28 16:18:02,317 - services.candle_alerts.processor - INFO - Found 1 subscribers for LINKUSDT 1m
+2025-05-28 16:18:02,318 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LINKUSDT 1m -0.11915961% >= 0.1%
+2025-05-28 16:18:02,318 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LINKUSDT 1m -0.11915961% >= 0.1%
+2025-05-28 16:18:02,318 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LINKUSDT 1m -0.11915961% >= 0.11%
+2025-05-28 16:18:02,318 - services.candle_alerts.processor - INFO - Sending 3 alerts for LINKUSDT 1m
+2025-05-28 16:18:02,318 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:18:02,318 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 31
+2025-05-28 16:18:02,319 - services.candle_alerts.processor - INFO - Found 1 subscribers for JASMYUSDT 1m
+2025-05-28 16:18:02,319 - services.candle_alerts.processor - INFO - Found 1 subscribers for BNBUSDT 1m
+2025-05-28 16:18:02,326 - services.candle_alerts.processor - INFO - Found 1 subscribers for TRBUSDT 1m
+2025-05-28 16:18:02,327 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.11731866% >= 0.1%
+2025-05-28 16:18:02,327 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.11731866% >= 0.1%
+2025-05-28 16:18:02,327 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.11731866% >= 0.11%
+2025-05-28 16:18:02,327 - services.candle_alerts.processor - INFO - Sending 3 alerts for TRBUSDT 1m
+2025-05-28 16:18:02,327 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:18:02,327 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 34
+2025-05-28 16:18:02,333 - services.candle_alerts.processor - INFO - Found 1 subscribers for CFXUSDT 1m
+2025-05-28 16:18:02,333 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOGEUSDT 1m
+2025-05-28 16:18:02,344 - services.candle_alerts.processor - INFO - Found 1 subscribers for XRPUSDT 1m
+2025-05-28 16:18:02,349 - services.candle_alerts.processor - INFO - Found 1 subscribers for ATOMUSDT 1m
+2025-05-28 16:18:02,401 - services.candle_alerts.processor - INFO - Found 1 subscribers for TAOUSDT 1m
+2025-05-28 16:18:02,418 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOGSUSDT 1m
+2025-05-28 16:18:02,418 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DOGSUSDT 1m -0.50632911% >= 0.1%
+2025-05-28 16:18:02,418 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DOGSUSDT 1m -0.50632911% >= 0.11%
+2025-05-28 16:18:02,418 - services.candle_alerts.processor - INFO - Sending 2 alerts for DOGSUSDT 1m
+2025-05-28 16:18:02,418 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,418 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 36
+2025-05-28 16:18:02,427 - services.candle_alerts.processor - INFO - Found 1 subscribers for METISUSDT 1m
+2025-05-28 16:18:02,427 - services.candle_alerts.processor - INFO - Found 1 subscribers for FLOWUSDT 1m
+2025-05-28 16:18:02,442 - services.candle_alerts.processor - INFO - Found 1 subscribers for BTCDOMUSDT 1m
+2025-05-28 16:18:02,447 - services.candle_alerts.processor - INFO - Found 1 subscribers for QNTUSDT 1m
+2025-05-28 16:18:02,447 - services.candle_alerts.processor - INFO - Found 1 subscribers for JOEUSDT 1m
+2025-05-28 16:18:02,448 - services.candle_alerts.processor - INFO - Found 1 subscribers for INJUSDT 1m
+2025-05-28 16:18:02,448 - services.candle_alerts.processor - INFO - Found 1 subscribers for GMTUSDT 1m
+2025-05-28 16:18:02,449 - services.candle_alerts.processor - INFO - Found 1 subscribers for SYSUSDT 1m
+2025-05-28 16:18:02,454 - services.candle_alerts.processor - INFO - Found 1 subscribers for RONINUSDT 1m
+2025-05-28 16:18:02,455 - services.candle_alerts.processor - INFO - Found 1 subscribers for FXSUSDT 1m
+2025-05-28 16:18:02,456 - services.candle_alerts.processor - INFO - Found 1 subscribers for BLURUSDT 1m
+2025-05-28 16:18:02,456 - services.candle_alerts.processor - INFO - Found 1 subscribers for XMRUSDT 1m
+2025-05-28 16:18:02,456 - services.candle_alerts.processor - INFO - Found 1 subscribers for XVGUSDT 1m
+2025-05-28 16:18:02,457 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XVGUSDT 1m -0.16863406% >= 0.1%
+2025-05-28 16:18:02,457 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XVGUSDT 1m -0.16863406% >= 0.11%
+2025-05-28 16:18:02,457 - services.candle_alerts.processor - INFO - Sending 2 alerts for XVGUSDT 1m
+2025-05-28 16:18:02,457 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,457 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 38
+2025-05-28 16:18:02,461 - services.candle_alerts.processor - INFO - Found 1 subscribers for DUSKUSDT 1m
+2025-05-28 16:18:02,462 - services.candle_alerts.processor - INFO - Found 1 subscribers for THETAUSDT 1m
+2025-05-28 16:18:02,462 - services.candle_alerts.processor - INFO - Found 1 subscribers for DODOXUSDT 1m
+2025-05-28 16:18:02,463 - services.candle_alerts.processor - INFO - Found 1 subscribers for BOMEUSDT 1m
+2025-05-28 16:18:02,463 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BOMEUSDT 1m -0.21459227% >= 0.1%
+2025-05-28 16:18:02,463 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BOMEUSDT 1m -0.21459227% >= 0.11%
+2025-05-28 16:18:02,463 - services.candle_alerts.processor - INFO - Sending 2 alerts for BOMEUSDT 1m
+2025-05-28 16:18:02,463 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,463 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 40
+2025-05-28 16:18:02,464 - services.candle_alerts.processor - INFO - Found 1 subscribers for MOVRUSDT 1m
+2025-05-28 16:18:02,464 - services.candle_alerts.processor - INFO - Found 1 subscribers for XAIUSDT 1m
+2025-05-28 16:18:02,464 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XAIUSDT 1m -0.11768860% >= 0.1%
+2025-05-28 16:18:02,464 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: XAIUSDT 1m -0.11768860% >= 0.11%
+2025-05-28 16:18:02,464 - services.candle_alerts.processor - INFO - Sending 2 alerts for XAIUSDT 1m
+2025-05-28 16:18:02,464 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,464 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 42
+2025-05-28 16:18:02,464 - services.candle_alerts.processor - INFO - Found 1 subscribers for API3USDT 1m
+2025-05-28 16:18:02,468 - services.candle_alerts.processor - INFO - Found 1 subscribers for ENSUSDT 1m
+2025-05-28 16:18:02,468 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ENSUSDT 1m -0.14467469% >= 0.1%
+2025-05-28 16:18:02,468 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ENSUSDT 1m -0.14467469% >= 0.11%
+2025-05-28 16:18:02,468 - services.candle_alerts.processor - INFO - Sending 2 alerts for ENSUSDT 1m
+2025-05-28 16:18:02,468 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,468 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 44
+2025-05-28 16:18:02,469 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZECUSDT 1m
+2025-05-28 16:18:02,469 - services.candle_alerts.processor - INFO - Found 1 subscribers for RAREUSDT 1m
+2025-05-28 16:18:02,469 - services.candle_alerts.processor - INFO - Found 1 subscribers for LISTAUSDT 1m
+2025-05-28 16:18:02,470 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOTUSDT 1m
+2025-05-28 16:18:02,470 - services.candle_alerts.processor - INFO - Found 1 subscribers for ARUSDT 1m
+2025-05-28 16:18:02,470 - services.candle_alerts.processor - INFO - Found 1 subscribers for DYMUSDT 1m
+2025-05-28 16:18:02,474 - services.candle_alerts.processor - INFO - Found 1 subscribers for ICXUSDT 1m
+2025-05-28 16:18:02,474 - services.candle_alerts.processor - INFO - Found 1 subscribers for CELRUSDT 1m
+2025-05-28 16:18:02,474 - services.candle_alerts.processor - INFO - Found 1 subscribers for IOTXUSDT 1m
+2025-05-28 16:18:02,476 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000SATSUSDT 1m
+2025-05-28 16:18:02,476 - services.candle_alerts.processor - INFO - Found 1 subscribers for WLDUSDT 1m
+2025-05-28 16:18:02,476 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHFIUSDT 1m
+2025-05-28 16:18:02,476 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ETHFIUSDT 1m -0.25566366% >= 0.1%
+2025-05-28 16:18:02,476 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ETHFIUSDT 1m -0.25566366% >= 0.11%
+2025-05-28 16:18:02,477 - services.candle_alerts.processor - INFO - Sending 2 alerts for ETHFIUSDT 1m
+2025-05-28 16:18:02,477 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,477 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 46
+2025-05-28 16:18:02,477 - services.candle_alerts.processor - INFO - Found 1 subscribers for ALTUSDT 1m
+2025-05-28 16:18:02,477 - services.candle_alerts.processor - INFO - Found 1 subscribers for VETUSDT 1m
+2025-05-28 16:18:02,478 - services.candle_alerts.processor - INFO - Found 1 subscribers for OGNUSDT 1m
+2025-05-28 16:18:02,478 - services.candle_alerts.processor - INFO - Found 1 subscribers for MAVUSDT 1m
+2025-05-28 16:18:02,486 - services.candle_alerts.processor - INFO - Found 1 subscribers for LDOUSDT 1m
+2025-05-28 16:18:02,486 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LDOUSDT 1m -0.18271711% >= 0.1%
+2025-05-28 16:18:02,486 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LDOUSDT 1m -0.18271711% >= 0.11%
+2025-05-28 16:18:02,486 - services.candle_alerts.processor - INFO - Sending 2 alerts for LDOUSDT 1m
+2025-05-28 16:18:02,487 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,487 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 48
+2025-05-28 16:18:02,487 - services.candle_alerts.processor - INFO - Found 1 subscribers for WUSDT 1m
+2025-05-28 16:18:02,488 - services.candle_alerts.processor - INFO - Found 1 subscribers for CHESSUSDT 1m
+2025-05-28 16:18:02,488 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000BONKUSDT 1m
+2025-05-28 16:18:02,488 - services.candle_alerts.processor - INFO - Found 1 subscribers for HBARUSDT 1m
+2025-05-28 16:18:02,488 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000SHIBUSDT 1m
+2025-05-28 16:18:02,494 - services.candle_alerts.processor - INFO - Found 1 subscribers for LPTUSDT 1m
+2025-05-28 16:18:02,510 - services.candle_alerts.processor - INFO - Found 1 subscribers for IDUSDT 1m
+2025-05-28 16:18:02,511 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IDUSDT 1m -0.12607283% >= 0.1%
+2025-05-28 16:18:02,511 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IDUSDT 1m -0.12607283% >= 0.11%
+2025-05-28 16:18:02,511 - services.candle_alerts.processor - INFO - Sending 2 alerts for IDUSDT 1m
+2025-05-28 16:18:02,511 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,511 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 50
+2025-05-28 16:18:02,511 - utils.queue - INFO - Flushing 50 alerts for user 598544654
+2025-05-28 16:18:02,511 - utils.queue - INFO - Adding message to queue for user 598544654, priority: Priority.HIGH
+2025-05-28 16:18:02,511 - services.candle_alerts.processor - INFO - Found 1 subscribers for SAGAUSDT 1m
+2025-05-28 16:18:02,512 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SAGAUSDT 1m -0.10554090% >= 0.1%
+2025-05-28 16:18:02,512 - services.candle_alerts.processor - INFO - Sending 1 alerts for SAGAUSDT 1m
+2025-05-28 16:18:02,512 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:18:02,520 - services.candle_alerts.processor - INFO - Found 1 subscribers for PYTHUSDT 1m
+2025-05-28 16:18:02,526 - services.candle_alerts.processor - INFO - Found 1 subscribers for BRETTUSDT 1m
+2025-05-28 16:18:02,527 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BRETTUSDT 1m -0.11795930% >= 0.1%
+2025-05-28 16:18:02,527 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BRETTUSDT 1m -0.11795930% >= 0.11%
+2025-05-28 16:18:02,527 - services.candle_alerts.processor - INFO - Sending 2 alerts for BRETTUSDT 1m
+2025-05-28 16:18:02,527 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:18:02,540 - services.candle_alerts.processor - INFO - Found 1 subscribers for SANDUSDT 1m
+2025-05-28 16:18:02,540 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SANDUSDT 1m -0.10359675% >= 0.1%
+2025-05-28 16:18:02,540 - services.candle_alerts.processor - INFO - Sending 1 alerts for SANDUSDT 1m
+2025-05-28 16:18:02,541 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:18:14,262 - cache.memory - INFO - Deactivated preset 1
+2025-05-28 16:18:15,091 - cache.memory - INFO - Activated preset 1
+2025-05-28 16:24:16,670 - __main__ - INFO - Starting Crypto Bot...
+2025-05-28 16:24:16,670 - __main__ - INFO - Starting services...
+2025-05-28 16:24:16,670 - services.telegram.bot - INFO - Starting Telegram bot...
+2025-05-28 16:24:16,957 - services.telegram.bot - INFO - Database initialized
+2025-05-28 16:24:16,957 - cache.memory - INFO - Loading data from database to cache...
+2025-05-28 16:24:16,959 - cache.memory - INFO - Loaded active preset 2 with 50 pairs and 1 intervals
+2025-05-28 16:24:16,960 - cache.memory - INFO - Loaded active preset 3 with 250 pairs and 1 intervals
+2025-05-28 16:24:16,960 - cache.memory - INFO - Loaded active preset 4 with 250 pairs and 1 intervals
+2025-05-28 16:24:16,960 - cache.memory - INFO - Loaded active preset 1 with 50 pairs and 1 intervals
+2025-05-28 16:24:16,961 - cache.memory - INFO - Loaded 4 presets and 1 gas alerts
+2025-05-28 16:24:16,961 - cache.memory - INFO - Total active subscriptions: 300
+2025-05-28 16:24:16,961 - services.telegram.bot - INFO - Cache loaded from database
+2025-05-28 16:24:16,961 - utils.queue - INFO - Message queue processing started
+2025-05-28 16:24:16,961 - services.telegram.bot - INFO - Message queue processing started
+2025-05-28 16:24:16,962 - utils.queue - INFO - Message queue processing loop started
+2025-05-28 16:24:17,190 - services.telegram.bot - INFO - Bot started: @CryptoFlash_ticker_bot
+2025-05-28 16:24:19,678 - services.candle_alerts.service - INFO - Starting Candle Alert Service...
+2025-05-28 16:24:19,678 - cache.symbols_cache - INFO - Initializing symbols cache...
+2025-05-28 16:24:20,125 - services.binanceAPI.service - INFO - Fetched 421 active perpetual USDT futures symbols from API
+2025-05-28 16:24:20,126 - cache.symbols_cache - INFO - Symbols cache initialized with 421 symbols
+2025-05-28 16:24:20,126 - services.candle_alerts.processor - INFO - Starting candle processor...
+2025-05-28 16:24:20,126 - services.candle_alerts.processor - INFO - Started 4 processing workers
+2025-05-28 16:24:20,126 - services.candle_alerts.websocket - INFO - Starting WebSocket connections...
+2025-05-28 16:24:20,126 - services.candle_alerts.websocket - INFO - Generating streams for 421 symbols
+2025-05-28 16:24:20,127 - services.candle_alerts.websocket - INFO - Generated 4 stream groups with 2526 total streams
+2025-05-28 16:24:20,127 - services.candle_alerts.processor - INFO - Worker 0 started
+2025-05-28 16:24:20,127 - services.candle_alerts.processor - INFO - Worker 1 started
+2025-05-28 16:24:20,127 - services.candle_alerts.processor - INFO - Worker 2 started
+2025-05-28 16:24:20,127 - services.candle_alerts.processor - INFO - Worker 3 started
+2025-05-28 16:24:20,127 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 0 with 750 streams... (attempt 1)
+2025-05-28 16:24:20,637 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 1 with 750 streams... (attempt 1)
+2025-05-28 16:24:21,010 - services.candle_alerts.websocket - INFO - WebSocket group 0 connected successfully
+2025-05-28 16:24:21,148 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 2 with 750 streams... (attempt 1)
+2025-05-28 16:24:21,659 - services.candle_alerts.websocket - INFO - Connecting WebSocket group 3 with 276 streams... (attempt 1)
+2025-05-28 16:24:21,738 - services.candle_alerts.websocket - INFO - WebSocket group 1 connected successfully
+2025-05-28 16:24:22,160 - services.candle_alerts.websocket - INFO - Started 4 WebSocket connection tasks
+2025-05-28 16:24:22,160 - services.candle_alerts.service - INFO - Candle Alert Service started successfully
+2025-05-28 16:24:22,160 - services.gas_alerts.service - INFO - Starting Gas Alert Service...
+2025-05-28 16:24:22,160 - services.gas_alerts.service - INFO - Gas Alert Service started
+2025-05-28 16:24:22,160 - __main__ - INFO - All services started successfully
+2025-05-28 16:24:22,242 - services.candle_alerts.websocket - INFO - WebSocket group 2 connected successfully
+2025-05-28 16:24:22,477 - services.candle_alerts.websocket - INFO - WebSocket group 3 connected successfully
+2025-05-28 16:25:02,109 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000PEPEUSDT 1m
+2025-05-28 16:25:02,110 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHUSDT 1m
+2025-05-28 16:25:02,110 - services.candle_alerts.processor - INFO - Found 1 subscribers for FETUSDT 1m
+2025-05-28 16:25:02,110 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: FETUSDT 1m 0.14337708% >= 0.1%
+2025-05-28 16:25:02,110 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: FETUSDT 1m 0.14337708% >= 0.11%
+2025-05-28 16:25:02,111 - services.candle_alerts.processor - INFO - Sending 2 alerts for FETUSDT 1m
+2025-05-28 16:25:02,111 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,111 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 2
+2025-05-28 16:25:02,111 - services.candle_alerts.processor - INFO - Found 1 subscribers for BNBUSDT 5m
+2025-05-28 16:25:02,111 - services.candle_alerts.processor - INFO - Found 1 subscribers for BNBUSDT 1m
+2025-05-28 16:25:02,111 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHUSDT 5m
+2025-05-28 16:25:02,123 - services.candle_alerts.processor - INFO - Found 1 subscribers for QNTUSDT 1m
+2025-05-28 16:25:02,123 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: QNTUSDT 1m -0.11720385% >= 0.1%
+2025-05-28 16:25:02,123 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: QNTUSDT 1m -0.11720385% >= 0.11%
+2025-05-28 16:25:02,123 - services.candle_alerts.processor - INFO - Sending 2 alerts for QNTUSDT 1m
+2025-05-28 16:25:02,124 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,124 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 4
+2025-05-28 16:25:02,124 - services.candle_alerts.processor - INFO - Found 1 subscribers for TONUSDT 1m
+2025-05-28 16:25:02,124 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TONUSDT 1m 0.18458166% >= 0.1%
+2025-05-28 16:25:02,124 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TONUSDT 1m 0.18458166% >= 0.11%
+2025-05-28 16:25:02,124 - services.candle_alerts.processor - INFO - Sending 2 alerts for TONUSDT 1m
+2025-05-28 16:25:02,124 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,124 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 6
+2025-05-28 16:25:02,133 - services.candle_alerts.processor - INFO - Found 1 subscribers for INJUSDT 1m
+2025-05-28 16:25:02,134 - services.candle_alerts.processor - INFO - Found 1 subscribers for NEOUSDT 5m
+2025-05-28 16:25:02,134 - services.candle_alerts.processor - INFO - Found 1 subscribers for BELUSDT 1m
+2025-05-28 16:25:02,135 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZECUSDT 1m
+2025-05-28 16:25:02,135 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZECUSDT 5m
+2025-05-28 16:25:02,135 - services.candle_alerts.processor - INFO - Found 1 subscribers for NEOUSDT 1m
+2025-05-28 16:25:02,135 - services.candle_alerts.processor - INFO - Found 1 subscribers for TRBUSDT 1m
+2025-05-28 16:25:02,135 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.19947079% >= 0.1%
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.19947079% >= 0.11%
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 1m -0.19947079% >= 0.1%
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Sending 3 alerts for TRBUSDT 1m
+2025-05-28 16:25:02,136 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:25:02,136 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 9
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Found 1 subscribers for LTCUSDT 5m
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Found 1 subscribers for LTCUSDT 1m
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Found 1 subscribers for TRBUSDT 5m
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: TRBUSDT 5m -0.68060282% >= 0.1%
+2025-05-28 16:25:02,136 - services.candle_alerts.processor - INFO - Sending 1 alerts for TRBUSDT 5m
+2025-05-28 16:25:02,136 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,136 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 10
+2025-05-28 16:25:02,149 - services.candle_alerts.processor - INFO - Found 1 subscribers for ADAUSDT 5m
+2025-05-28 16:25:02,149 - services.candle_alerts.processor - INFO - Found 1 subscribers for FLMUSDT 1m
+2025-05-28 16:25:02,149 - services.candle_alerts.processor - INFO - Found 1 subscribers for ADAUSDT 1m
+2025-05-28 16:25:02,149 - services.candle_alerts.processor - INFO - Found 1 subscribers for WIFUSDT 1m
+2025-05-28 16:25:02,150 - services.candle_alerts.processor - INFO - Found 1 subscribers for ENAUSDT 1m
+2025-05-28 16:25:02,162 - services.candle_alerts.processor - INFO - Found 1 subscribers for XLMUSDT 5m
+2025-05-28 16:25:02,162 - services.candle_alerts.processor - INFO - Found 1 subscribers for XLMUSDT 1m
+2025-05-28 16:25:02,163 - services.candle_alerts.processor - INFO - Found 1 subscribers for ARKMUSDT 1m
+2025-05-28 16:25:02,163 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETHFIUSDT 1m
+2025-05-28 16:25:02,163 - services.candle_alerts.processor - INFO - Found 1 subscribers for TURBOUSDT 1m
+2025-05-28 16:25:02,164 - services.candle_alerts.processor - INFO - Found 1 subscribers for BLURUSDT 1m
+2025-05-28 16:25:02,164 - services.candle_alerts.processor - INFO - Found 1 subscribers for RUNEUSDT 5m
+2025-05-28 16:25:02,164 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: RUNEUSDT 5m 0.10167768% >= 0.1%
+2025-05-28 16:25:02,164 - services.candle_alerts.processor - INFO - Sending 1 alerts for RUNEUSDT 5m
+2025-05-28 16:25:02,164 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,164 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 11
+2025-05-28 16:25:02,164 - services.candle_alerts.processor - INFO - Found 1 subscribers for RUNEUSDT 1m
+2025-05-28 16:25:02,165 - services.candle_alerts.processor - INFO - Found 1 subscribers for TWTUSDT 1m
+2025-05-28 16:25:02,165 - services.candle_alerts.processor - INFO - Found 1 subscribers for GRTUSDT 1m
+2025-05-28 16:25:02,174 - services.candle_alerts.processor - INFO - Found 1 subscribers for HBARUSDT 1m
+2025-05-28 16:25:02,175 - services.candle_alerts.processor - INFO - Found 1 subscribers for IOTAUSDT 5m
+2025-05-28 16:25:02,175 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IOTAUSDT 5m -0.23629490% >= 0.1%
+2025-05-28 16:25:02,175 - services.candle_alerts.processor - INFO - Sending 1 alerts for IOTAUSDT 5m
+2025-05-28 16:25:02,175 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,175 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 12
+2025-05-28 16:25:02,176 - services.candle_alerts.processor - INFO - Found 1 subscribers for AUCTIONUSDT 1m
+2025-05-28 16:25:02,176 - services.candle_alerts.processor - INFO - Found 1 subscribers for PHBUSDT 1m
+2025-05-28 16:25:02,176 - services.candle_alerts.processor - INFO - Found 1 subscribers for NOTUSDT 1m
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: NOTUSDT 1m 0.19986676% >= 0.1%
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: NOTUSDT 1m 0.19986676% >= 0.11%
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Sending 2 alerts for NOTUSDT 1m
+2025-05-28 16:25:02,177 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,177 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 14
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Found 1 subscribers for IOTAUSDT 1m
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IOTAUSDT 1m -0.14191107% >= 0.1%
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IOTAUSDT 1m -0.14191107% >= 0.11%
+2025-05-28 16:25:02,177 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: IOTAUSDT 1m -0.14191107% >= 0.1%
+2025-05-28 16:25:02,178 - services.candle_alerts.processor - INFO - Sending 3 alerts for IOTAUSDT 1m
+2025-05-28 16:25:02,178 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:25:02,178 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 17
+2025-05-28 16:25:02,178 - services.candle_alerts.processor - INFO - Found 1 subscribers for BANDUSDT 1m
+2025-05-28 16:25:02,178 - services.candle_alerts.processor - INFO - Found 1 subscribers for BANDUSDT 5m
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BANDUSDT 5m -0.10672359% >= 0.1%
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Sending 1 alerts for BANDUSDT 5m
+2025-05-28 16:25:02,179 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,179 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 18
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Found 1 subscribers for WOOUSDT 1m
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000BONKUSDT 1m
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: 1000BONKUSDT 1m -0.26913290% >= 0.1%
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: 1000BONKUSDT 1m -0.26913290% >= 0.11%
+2025-05-28 16:25:02,179 - services.candle_alerts.processor - INFO - Sending 2 alerts for 1000BONKUSDT 1m
+2025-05-28 16:25:02,179 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,180 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 20
+2025-05-28 16:25:02,180 - services.candle_alerts.processor - INFO - Found 1 subscribers for BNTUSDT 1m
+2025-05-28 16:25:02,190 - services.candle_alerts.processor - INFO - Found 1 subscribers for BRETTUSDT 1m
+2025-05-28 16:25:02,190 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BRETTUSDT 1m 0.10316875% >= 0.1%
+2025-05-28 16:25:02,191 - services.candle_alerts.processor - INFO - Sending 1 alerts for BRETTUSDT 1m
+2025-05-28 16:25:02,191 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,191 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 21
+2025-05-28 16:25:02,191 - services.candle_alerts.processor - INFO - Found 1 subscribers for GUSDT 1m
+2025-05-28 16:25:02,191 - services.candle_alerts.processor - INFO - Found 1 subscribers for SUPERUSDT 1m
+2025-05-28 16:25:02,192 - services.candle_alerts.processor - INFO - Found 1 subscribers for SUSHIUSDT 1m
+2025-05-28 16:25:02,192 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SUSHIUSDT 1m -0.11976048% >= 0.1%
+2025-05-28 16:25:02,192 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SUSHIUSDT 1m -0.11976048% >= 0.11%
+2025-05-28 16:25:02,192 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: SUSHIUSDT 1m -0.11976048% >= 0.1%
+2025-05-28 16:25:02,193 - services.candle_alerts.processor - INFO - Sending 3 alerts for SUSHIUSDT 1m
+2025-05-28 16:25:02,193 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:25:02,193 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 24
+2025-05-28 16:25:02,193 - services.candle_alerts.processor - INFO - Found 1 subscribers for OPUSDT 1m
+2025-05-28 16:25:02,193 - services.candle_alerts.processor - INFO - Found 1 subscribers for SUSHIUSDT 5m
+2025-05-28 16:25:02,193 - services.candle_alerts.processor - INFO - Found 1 subscribers for APEUSDT 1m
+2025-05-28 16:25:02,198 - services.candle_alerts.processor - INFO - Found 1 subscribers for ORDIUSDT 1m
+2025-05-28 16:25:02,198 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ORDIUSDT 1m -0.10060362% >= 0.1%
+2025-05-28 16:25:02,199 - services.candle_alerts.processor - INFO - Sending 1 alerts for ORDIUSDT 1m
+2025-05-28 16:25:02,199 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,199 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 25
+2025-05-28 16:25:02,208 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETCUSDT 5m
+2025-05-28 16:25:02,208 - services.candle_alerts.processor - INFO - Found 1 subscribers for ETCUSDT 1m
+2025-05-28 16:25:02,208 - services.candle_alerts.processor - INFO - Found 1 subscribers for ICPUSDT 1m
+2025-05-28 16:25:02,209 - services.candle_alerts.processor - INFO - Found 1 subscribers for XVGUSDT 1m
+2025-05-28 16:25:02,209 - services.candle_alerts.processor - INFO - Found 1 subscribers for LQTYUSDT 1m
+2025-05-28 16:25:02,209 - services.candle_alerts.processor - INFO - Found 1 subscribers for NMRUSDT 1m
+2025-05-28 16:25:02,209 - services.candle_alerts.processor - INFO - Found 1 subscribers for CFXUSDT 1m
+2025-05-28 16:25:02,210 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZROUSDT 1m
+2025-05-28 16:25:02,217 - services.candle_alerts.processor - INFO - Found 1 subscribers for BCHUSDT 1m
+2025-05-28 16:25:02,217 - services.candle_alerts.processor - INFO - Found 1 subscribers for ATOMUSDT 1m
+2025-05-28 16:25:02,217 - services.candle_alerts.processor - INFO - Found 1 subscribers for ATOMUSDT 5m
+2025-05-28 16:25:02,218 - services.candle_alerts.processor - INFO - Found 1 subscribers for BCHUSDT 5m
+2025-05-28 16:25:02,218 - services.candle_alerts.processor - INFO - Found 1 subscribers for TAOUSDT 1m
+2025-05-28 16:25:02,218 - services.candle_alerts.processor - INFO - Found 1 subscribers for ONDOUSDT 1m
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Found 1 subscribers for WLDUSDT 1m
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: WLDUSDT 1m -0.11644833% >= 0.1%
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: WLDUSDT 1m -0.11644833% >= 0.11%
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Sending 2 alerts for WLDUSDT 1m
+2025-05-28 16:25:02,219 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,219 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 27
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000SHIBUSDT 1m
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Found 1 subscribers for BTCUSDT 5m
+2025-05-28 16:25:02,219 - services.candle_alerts.processor - INFO - Found 1 subscribers for RSRUSDT 1m
+2025-05-28 16:25:02,220 - services.candle_alerts.processor - INFO - Found 1 subscribers for LINKUSDT 1m
+2025-05-28 16:25:02,220 - services.candle_alerts.processor - INFO - Found 1 subscribers for BTCUSDT 1m
+2025-05-28 16:25:02,220 - services.candle_alerts.processor - INFO - Found 1 subscribers for LINKUSDT 5m
+2025-05-28 16:25:02,221 - services.candle_alerts.processor - INFO - Found 1 subscribers for DYMUSDT 1m
+2025-05-28 16:25:02,221 - services.candle_alerts.processor - INFO - Found 1 subscribers for WAXPUSDT 1m
+2025-05-28 16:25:02,221 - services.candle_alerts.processor - INFO - Found 1 subscribers for PENDLEUSDT 1m
+2025-05-28 16:25:02,227 - services.candle_alerts.processor - INFO - Found 1 subscribers for ARBUSDT 1m
+2025-05-28 16:25:02,227 - services.candle_alerts.processor - INFO - Found 1 subscribers for SUIUSDT 1m
+2025-05-28 16:25:02,227 - services.candle_alerts.processor - INFO - Found 1 subscribers for UNIUSDT 5m
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: UNIUSDT 5m 0.14708045% >= 0.1%
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Sending 1 alerts for UNIUSDT 5m
+2025-05-28 16:25:02,228 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,228 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 28
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Found 1 subscribers for UNIUSDT 1m
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: UNIUSDT 1m -0.17592728% >= 0.1%
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: UNIUSDT 1m -0.17592728% >= 0.11%
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: UNIUSDT 1m -0.17592728% >= 0.1%
+2025-05-28 16:25:02,228 - services.candle_alerts.processor - INFO - Sending 3 alerts for UNIUSDT 1m
+2025-05-28 16:25:02,229 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:25:02,229 - utils.queue - INFO - Added 3 alerts for user 598544654, total pending: 31
+2025-05-28 16:25:02,230 - services.candle_alerts.processor - INFO - Found 1 subscribers for AVAXUSDT 1m
+2025-05-28 16:25:02,230 - services.candle_alerts.processor - INFO - Found 1 subscribers for AVAXUSDT 5m
+2025-05-28 16:25:02,230 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: AVAXUSDT 5m -0.11918444% >= 0.1%
+2025-05-28 16:25:02,230 - services.candle_alerts.processor - INFO - Sending 1 alerts for AVAXUSDT 5m
+2025-05-28 16:25:02,230 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,230 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 32
+2025-05-28 16:25:02,230 - services.candle_alerts.processor - INFO - Found 1 subscribers for GMTUSDT 1m
+2025-05-28 16:25:02,230 - services.candle_alerts.processor - INFO - Found 1 subscribers for NKNUSDT 1m
+2025-05-28 16:25:02,231 - services.candle_alerts.processor - INFO - Found 1 subscribers for OGNUSDT 1m
+2025-05-28 16:25:02,231 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OGNUSDT 1m -0.14992504% >= 0.1%
+2025-05-28 16:25:02,231 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OGNUSDT 1m -0.14992504% >= 0.11%
+2025-05-28 16:25:02,231 - services.candle_alerts.processor - INFO - Sending 2 alerts for OGNUSDT 1m
+2025-05-28 16:25:02,231 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,231 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 34
+2025-05-28 16:25:02,231 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000FLOKIUSDT 1m
+2025-05-28 16:25:02,232 - services.candle_alerts.processor - INFO - Found 1 subscribers for LISTAUSDT 1m
+2025-05-28 16:25:02,232 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: LISTAUSDT 1m 0.10989011% >= 0.1%
+2025-05-28 16:25:02,232 - services.candle_alerts.processor - INFO - Sending 1 alerts for LISTAUSDT 1m
+2025-05-28 16:25:02,233 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,233 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 35
+2025-05-28 16:25:02,233 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZKUSDT 1m
+2025-05-28 16:25:02,233 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ZKUSDT 1m -0.14220256% >= 0.1%
+2025-05-28 16:25:02,233 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ZKUSDT 1m -0.14220256% >= 0.11%
+2025-05-28 16:25:02,233 - services.candle_alerts.processor - INFO - Sending 2 alerts for ZKUSDT 1m
+2025-05-28 16:25:02,233 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,233 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 37
+2025-05-28 16:25:02,237 - services.candle_alerts.processor - INFO - Found 1 subscribers for STXUSDT 1m
+2025-05-28 16:25:02,238 - services.candle_alerts.processor - INFO - Found 1 subscribers for DYDXUSDT 1m
+2025-05-28 16:25:02,238 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DYDXUSDT 1m -0.15649452% >= 0.1%
+2025-05-28 16:25:02,238 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: DYDXUSDT 1m -0.15649452% >= 0.11%
+2025-05-28 16:25:02,238 - services.candle_alerts.processor - INFO - Sending 2 alerts for DYDXUSDT 1m
+2025-05-28 16:25:02,238 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,238 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 39
+2025-05-28 16:25:02,239 - services.candle_alerts.processor - INFO - Found 1 subscribers for IOUSDT 1m
+2025-05-28 16:25:02,239 - services.candle_alerts.processor - INFO - Found 1 subscribers for CHESSUSDT 1m
+2025-05-28 16:25:02,239 - services.candle_alerts.processor - INFO - Found 1 subscribers for VANRYUSDT 1m
+2025-05-28 16:25:02,240 - services.candle_alerts.processor - INFO - Found 1 subscribers for XAIUSDT 1m
+2025-05-28 16:25:02,240 - services.candle_alerts.processor - INFO - Found 1 subscribers for VETUSDT 5m
+2025-05-28 16:25:02,240 - services.candle_alerts.processor - INFO - Found 1 subscribers for VETUSDT 1m
+2025-05-28 16:25:02,240 - services.candle_alerts.processor - INFO - Found 1 subscribers for SPELLUSDT 1m
+2025-05-28 16:25:02,241 - services.candle_alerts.processor - INFO - Found 1 subscribers for LSKUSDT 1m
+2025-05-28 16:25:02,241 - services.candle_alerts.processor - INFO - Found 1 subscribers for STORJUSDT 1m
+2025-05-28 16:25:02,242 - services.candle_alerts.processor - INFO - Found 1 subscribers for STORJUSDT 5m
+2025-05-28 16:25:02,242 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: STORJUSDT 5m 0.10166045% >= 0.1%
+2025-05-28 16:25:02,242 - services.candle_alerts.processor - INFO - Sending 1 alerts for STORJUSDT 5m
+2025-05-28 16:25:02,242 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,242 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 40
+2025-05-28 16:25:02,242 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZETAUSDT 1m
+2025-05-28 16:25:02,246 - services.candle_alerts.processor - INFO - Found 1 subscribers for SSVUSDT 1m
+2025-05-28 16:25:02,247 - services.candle_alerts.processor - INFO - Found 1 subscribers for OMUSDT 1m
+2025-05-28 16:25:02,248 - services.candle_alerts.processor - INFO - Found 1 subscribers for ARUSDT 1m
+2025-05-28 16:25:02,248 - services.candle_alerts.processor - INFO - Found 1 subscribers for HIGHUSDT 1m
+2025-05-28 16:25:02,249 - services.candle_alerts.processor - INFO - Found 1 subscribers for TIAUSDT 1m
+2025-05-28 16:25:02,249 - services.candle_alerts.processor - INFO - Found 1 subscribers for REZUSDT 1m
+2025-05-28 16:25:02,249 - services.candle_alerts.processor - INFO - Found 1 subscribers for POPCATUSDT 1m
+2025-05-28 16:25:02,249 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: POPCATUSDT 1m -0.10757315% >= 0.1%
+2025-05-28 16:25:02,249 - services.candle_alerts.processor - INFO - Sending 1 alerts for POPCATUSDT 1m
+2025-05-28 16:25:02,250 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,250 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 41
+2025-05-28 16:25:02,250 - services.candle_alerts.processor - INFO - Found 1 subscribers for RLCUSDT 1m
+2025-05-28 16:25:02,250 - services.candle_alerts.processor - INFO - Found 1 subscribers for RLCUSDT 5m
+2025-05-28 16:25:02,250 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: RLCUSDT 5m -0.11005757% >= 0.1%
+2025-05-28 16:25:02,251 - services.candle_alerts.processor - INFO - Sending 1 alerts for RLCUSDT 5m
+2025-05-28 16:25:02,251 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,251 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 42
+2025-05-28 16:25:02,251 - services.candle_alerts.processor - INFO - Found 1 subscribers for THETAUSDT 5m
+2025-05-28 16:25:02,251 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: THETAUSDT 5m 0.10163749% >= 0.1%
+2025-05-28 16:25:02,251 - services.candle_alerts.processor - INFO - Sending 1 alerts for THETAUSDT 5m
+2025-05-28 16:25:02,251 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,251 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 43
+2025-05-28 16:25:02,252 - services.candle_alerts.processor - INFO - Found 1 subscribers for THETAUSDT 1m
+2025-05-28 16:25:02,252 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZILUSDT 1m
+2025-05-28 16:25:02,252 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZILUSDT 5m
+2025-05-28 16:25:02,252 - services.candle_alerts.processor - INFO - Found 1 subscribers for USTCUSDT 1m
+2025-05-28 16:25:02,252 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: USTCUSDT 1m 0.10785824% >= 0.1%
+2025-05-28 16:25:02,253 - services.candle_alerts.processor - INFO - Sending 1 alerts for USTCUSDT 1m
+2025-05-28 16:25:02,253 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,253 - utils.queue - INFO - Added 1 alerts for user 598544654, total pending: 44
+2025-05-28 16:25:02,257 - services.candle_alerts.processor - INFO - Found 1 subscribers for C98USDT 1m
+2025-05-28 16:25:02,257 - services.candle_alerts.processor - INFO - Found 1 subscribers for DUSKUSDT 1m
+2025-05-28 16:25:02,258 - services.candle_alerts.processor - INFO - Found 1 subscribers for JASMYUSDT 1m
+2025-05-28 16:25:02,258 - services.candle_alerts.processor - INFO - Found 1 subscribers for XRPUSDT 1m
+2025-05-28 16:25:02,259 - services.candle_alerts.processor - INFO - Found 1 subscribers for SANDUSDT 1m
+2025-05-28 16:25:02,259 - services.candle_alerts.processor - INFO - Found 1 subscribers for XRPUSDT 5m
+2025-05-28 16:25:02,259 - services.candle_alerts.processor - INFO - Found 1 subscribers for SAGAUSDT 1m
+2025-05-28 16:25:02,259 - services.candle_alerts.processor - INFO - Found 1 subscribers for KAVAUSDT 1m
+2025-05-28 16:25:02,260 - services.candle_alerts.processor - INFO - Found 1 subscribers for KAVAUSDT 5m
+2025-05-28 16:25:02,260 - services.candle_alerts.processor - INFO - Found 1 subscribers for OXTUSDT 1m
+2025-05-28 16:25:02,260 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OXTUSDT 1m -0.16345211% >= 0.1%
+2025-05-28 16:25:02,260 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: OXTUSDT 1m -0.16345211% >= 0.11%
+2025-05-28 16:25:02,260 - services.candle_alerts.processor - INFO - Sending 2 alerts for OXTUSDT 1m
+2025-05-28 16:25:02,260 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,260 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 46
+2025-05-28 16:25:02,260 - services.candle_alerts.processor - INFO - Found 1 subscribers for MOVRUSDT 1m
+2025-05-28 16:25:02,265 - services.candle_alerts.processor - INFO - Found 1 subscribers for WUSDT 1m
+2025-05-28 16:25:02,265 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: WUSDT 1m -0.11733646% >= 0.1%
+2025-05-28 16:25:02,265 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: WUSDT 1m -0.11733646% >= 0.11%
+2025-05-28 16:25:02,265 - services.candle_alerts.processor - INFO - Sending 2 alerts for WUSDT 1m
+2025-05-28 16:25:02,266 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,266 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 48
+2025-05-28 16:25:02,266 - services.candle_alerts.processor - INFO - Found 1 subscribers for ASTRUSDT 1m
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Found 1 subscribers for PEOPLEUSDT 1m
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Found 1 subscribers for ZENUSDT 1m
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Found 1 subscribers for IDUSDT 1m
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Found 1 subscribers for ONEUSDT 1m
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Found 1 subscribers for BOMEUSDT 1m
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BOMEUSDT 1m -0.12908778% >= 0.1%
+2025-05-28 16:25:02,267 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: BOMEUSDT 1m -0.12908778% >= 0.11%
+2025-05-28 16:25:02,268 - services.candle_alerts.processor - INFO - Sending 2 alerts for BOMEUSDT 1m
+2025-05-28 16:25:02,268 - utils.queue - INFO - Adding 2 alerts to queue
+2025-05-28 16:25:02,268 - utils.queue - INFO - Added 2 alerts for user 598544654, total pending: 50
+2025-05-28 16:25:02,268 - utils.queue - INFO - Flushing 50 alerts for user 598544654
+2025-05-28 16:25:02,268 - utils.queue - INFO - Adding message to queue for user 598544654, priority: Priority.HIGH
+2025-05-28 16:25:02,272 - services.candle_alerts.processor - INFO - Found 1 subscribers for AAVEUSDT 1m
+2025-05-28 16:25:02,273 - services.candle_alerts.processor - INFO - Found 1 subscribers for TRUUSDT 1m
+2025-05-28 16:25:02,274 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOGEUSDT 5m
+2025-05-28 16:25:02,274 - services.candle_alerts.processor - INFO - Found 1 subscribers for DOGEUSDT 1m
+2025-05-28 16:25:02,274 - services.candle_alerts.processor - INFO - Found 1 subscribers for 1000SATSUSDT 1m
+2025-05-28 16:25:02,274 - services.candle_alerts.processor - INFO - Found 1 subscribers for MAVUSDT 1m
+2025-05-28 16:25:02,275 - services.candle_alerts.processor - INFO - Found 1 subscribers for LRCUSDT 1m
+2025-05-28 16:25:02,275 - services.candle_alerts.processor - INFO - Found 1 subscribers for KSMUSDT 1m
+2025-05-28 16:25:02,276 - services.candle_alerts.processor - INFO - Found 1 subscribers for YGGUSDT 1m
+2025-05-28 16:25:02,276 - services.candle_alerts.processor - INFO - Found 1 subscribers for ILVUSDT 1m
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Found 1 subscribers for ICXUSDT 1m
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ICXUSDT 1m -0.16501650% >= 0.1%
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ICXUSDT 1m -0.16501650% >= 0.11%
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ICXUSDT 1m -0.16501650% >= 0.1%
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Sending 3 alerts for ICXUSDT 1m
+2025-05-28 16:25:02,277 - utils.queue - INFO - Adding 3 alerts to queue
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Found 1 subscribers for ICXUSDT 5m
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: ICXUSDT 5m -0.16501650% >= 0.1%
+2025-05-28 16:25:02,277 - services.candle_alerts.processor - INFO - Sending 1 alerts for ICXUSDT 5m
+2025-05-28 16:25:02,277 - utils.queue - INFO - Adding 1 alerts to queue
+2025-05-28 16:25:02,284 - services.candle_alerts.processor - INFO - Found 1 subscribers for PIXELUSDT 1m
+2025-05-28 16:25:02,284 - services.candle_alerts.processor - INFO - Alert triggered for user 598544654: PIXELUSDT 1m -0.10721944% >= 0.1%
+2025-05-28 16:25:02,284 - services.candle_alerts.processor - INFO - Sending 1 alerts for PIXELUSDT 1m
+2025-05-28 16:25:02,284 - utils.queue - INFO - Adding 1 alerts to queue

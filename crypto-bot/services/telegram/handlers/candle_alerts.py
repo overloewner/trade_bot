@@ -145,6 +145,46 @@ async def preset_pairs_volume(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(selected_intervals=[])
 
 
+async def preset_pairs_all(callback: types.CallbackQuery, state: FSMContext):
+    """Выбор всех пар из кеша"""
+    await callback.answer("Загружаю все пары...")
+    
+    # Получаем все пары из кеша памяти
+    all_pairs = symbols_cache.get_all_symbols()
+    
+    if not all_pairs:
+        await callback.message.edit_text(
+            "❌ Символы не загружены в кеш. Попробуйте позже.",
+            reply_markup=Keyboards.back_button("candle_alerts")
+        )
+        return
+    
+    # Сохраняем все пары (ограничиваем по лимиту если нужно)
+    if len(all_pairs) > config.MAX_PAIRS_PER_PRESET:
+        selected_pairs = all_pairs[:config.MAX_PAIRS_PER_PRESET]
+        await callback.message.edit_text(
+            f"⚠️ Выбрано {config.MAX_PAIRS_PER_PRESET} пар из {len(all_pairs)} (лимит достигнут)\n\n"
+            f"Первые пары: {', '.join(selected_pairs[:10])}{'...' if len(selected_pairs) > 10 else ''}",
+            reply_markup=Keyboards.intervals_selection(),
+            parse_mode="HTML"
+        )
+    else:
+        selected_pairs = all_pairs
+        await callback.message.edit_text(
+            f"✅ Выбрано ВСЕ {len(selected_pairs)} пар:\n" +
+            ", ".join(selected_pairs[:10]) +
+            (f"\n...и еще {len(selected_pairs) - 10}" if len(selected_pairs) > 10 else ""),
+            reply_markup=Keyboards.intervals_selection(),
+            parse_mode="HTML"
+        )
+    
+    await state.update_data(pairs=selected_pairs)
+    
+    # Переходим к выбору интервалов
+    await state.set_state(PresetStates.selecting_intervals)
+    await state.update_data(selected_intervals=[])
+
+
 async def preset_pairs_manual(callback: types.CallbackQuery, state: FSMContext):
     """Ручной ввод пар"""
     await callback.message.edit_text(
@@ -521,6 +561,7 @@ def register_candle_alerts_handlers(dp: Dispatcher):
     # Выбор пар
     dp.callback_query.register(preset_pairs_top100, F.data == "pairs_top100")
     dp.callback_query.register(preset_pairs_volume, F.data == "pairs_volume")
+    dp.callback_query.register(preset_pairs_all, F.data == "pairs_all")
     dp.callback_query.register(preset_pairs_manual, F.data == "pairs_manual")
     dp.message.register(process_manual_pairs, PresetStates.waiting_for_manual_pairs)
     
