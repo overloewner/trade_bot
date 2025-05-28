@@ -1,215 +1,284 @@
-"""Binance WebSocket connection manager."""
-
 import asyncio
 import json
-import websockets
+import logging
+from typing import List, Dict, Any, Optional, Callable
+from datetime import datetime
 import aiohttp
-from typing import List, Set, Dict, Optional, Callable, Any
-from config.settings import Config
-from utils.rate_limiter import binance_limiter
-import structlog
+from collections import defaultdict
 
-logger = structlog.get_logger()
+from config.settings import config
+from services.binanceAPI.service import binance_api
+logger = logging.getLogger(__name__)
 
 
 class BinanceWebSocketManager:
-    """Manages multiple WebSocket connections to Binance."""
+    """Менеджер WebSocket подключений к Binance"""
     
-    def __init__(self, message_handler: Callable[[Dict], None]):
-        self.message_handler = message_handler
-        self.connections: List[websockets.WebSocketServerProtocol] = []
-        self.active_streams: Set[str] = set()
-        self.should_stop = False
-        self.reconnect_delay = Config.RECONNECT_DELAY
+    def __init__(self, candle_callback: Callable):
+        self.candle_callback = candle_callback
+        self.connections: List[aiohttp.ClientWebSocketResponse] = []
+        self.sessions: List[aiohttp.ClientSession] = []
+        self.running = False
+        self.reconnect_tasks = []
+        self.all_streams = []
+        # Статистика
+        self.stats = {
+            'messages_received': 0,
+            'reconnects': 0,
+            'errors': 0,
+            'last_message_time': None
+        }
+        self._generate_all_streams
+        # Все возможные стримы
         
-    async def get_all_futures_symbols(self) -> List[str]:
-        """Get all futures trading pairs from Binance."""
+        logger.info(f"Generated {len(self.all_streams)} streams")
+    
+    async def _generate_all_streams(self):
+        """Генерация всех возможных стримов на основе реальных данных"""
         try:
-            await binance_limiter.acquire_api()
+            # Получаем все символы из API
+            all_symbols = await binance_api.get_all_symbols()
             
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"{Config.BINANCE_API_URL}/fapi/v1/exchangeInfo") as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        symbols = []
-                        
-                        for symbol_info in data['symbols']:
-                            if symbol_info['status'] == 'TRADING':
-                                symbols.append(symbol_info['symbol'])
-                        
-                        logger.info(f"Retrieved {len(symbols)} active futures symbols")
-                        return symbols[:400]  # Limit to top 400 pairs
-                    else:
-                        logger.error(f"Failed to get symbols: {response.status}")
-                        return []
-                        
-        except Exception as e:
-            logger.error(f"Error fetching symbols: {e}")
-            return []
-    
-    def generate_all_streams(self, symbols: List[str]) -> Set[str]:
-        """Generate all possible kline streams for symbols."""
-        streams = set()
-        for symbol in symbols:
-            for interval in Config.SUPPORTED_INTERVALS:
-                stream = f"{symbol.lower()}@kline_{interval}"
-                streams.add(stream)
-        return streams
-    
-    async def start_connections(self, required_streams: Set[str] = None) -> None:
-        """Start WebSocket connections for all streams."""
-        if not required_streams:
-            # Get all symbols and generate streams
-            symbols = await self.get_all_futures_symbols()
-            if not symbols:
-                logger.error("No symbols retrieved, cannot start WebSocket connections")
+            if not all_symbols:
+                logger.error("No symbols received from Binance API")
                 return
-            
-            all_streams = self.generate_all_streams(symbols)
-        else:
-            all_streams = required_streams
-        
-        self.active_streams = all_streams
-        
-        # Split streams across multiple connections (max 1024 per connection)
-        stream_chunks = self._chunk_streams(list(all_streams), Config.MAX_STREAMS_PER_CONNECTION)
-        
-        logger.info(f"Starting {len(stream_chunks)} WebSocket connections for {len(all_streams)} streams")
-        
-        # Start connections
-        tasks = []
-        for i, streams in enumerate(stream_chunks):
-            task = asyncio.create_task(self._maintain_connection(i, streams))
-            tasks.append(task)
-        
-        # Wait for all connections to start
-        await asyncio.gather(*tasks, return_exceptions=True)
-    
-    def _chunk_streams(self, streams: List[str], chunk_size: int) -> List[List[str]]:
-        """Split streams into chunks for multiple connections."""
-        chunks = []
-        for i in range(0, len(streams), chunk_size):
-            chunks.append(streams[i:i + chunk_size])
-        return chunks
-    
-    async def _maintain_connection(self, connection_id: int, streams: List[str]) -> None:
-        """Maintain a single WebSocket connection with reconnection logic."""
-        while not self.should_stop:
-            try:
-                await self._connect_and_listen(connection_id, streams)
-            except Exception as e:
-                logger.error(f"Connection {connection_id} error: {e}")
                 
-            if not self.should_stop:
-                logger.info(f"Reconnecting connection {connection_id} in {self.reconnect_delay} seconds")
-                await asyncio.sleep(self.reconnect_delay)
-    
-    async def _connect_and_listen(self, connection_id: int, streams: List[str]) -> None:
-        """Connect to WebSocket and listen for messages."""
-        # Build stream URL
-        stream_params = "/".join(streams)
-        ws_url = f"{Config.BINANCE_WS_URL}/{stream_params}"
-        
-        logger.info(f"Connecting to WebSocket {connection_id} with {len(streams)} streams")
-        
-        await binance_limiter.acquire_ws_connection()
-        
-        async with websockets.connect(
-            ws_url,
-            ping_interval=20,
-            ping_timeout=10,
-            close_timeout=10,
-            max_size=10**7,  # 10MB max message size
-        ) as websocket:
+            # Генерируем стримы для всех комбинаций символ/интервал
+            streams = []
+            for symbol in all_symbols:
+                for interval in config.SUPPORTED_INTERVALS:
+                    streams.append(f"{symbol.lower()}@kline_{interval}")
             
-            logger.info(f"WebSocket connection {connection_id} established")
+            # Разбиваем на группы
+            stream_groups = []
+            for i in range(0, len(streams), config.MAX_STREAMS_PER_CONNECTION):
+                group = streams[i:i + config.MAX_STREAMS_PER_CONNECTION]
+                stream_groups.append(group)
             
-            while not self.should_stop:
-                try:
-                    # Receive message with timeout
-                    message = await asyncio.wait_for(websocket.recv(), timeout=30)
-                    
-                    if message:
-                        await self._handle_message(connection_id, message)
-                        
-                except asyncio.TimeoutError:
-                    # Send ping to keep connection alive
-                    await websocket.ping()
-                    continue
-                except websockets.exceptions.ConnectionClosed:
-                    logger.warning(f"WebSocket connection {connection_id} closed")
-                    break
-                except Exception as e:
-                    logger.error(f"Error in WebSocket {connection_id}: {e}")
-                    break
-    
-    async def _handle_message(self, connection_id: int, message: str) -> None:
-        """Handle incoming WebSocket message."""
-        try:
-            data = json.loads(message)
+            self.all_streams = stream_groups
+            logger.info(f"Generated {len(self.all_streams)} stream groups with {len(streams)} total streams")
             
-            # Check if it's a kline message
-            if 'stream' in data and 'data' in data:
-                stream_data = data['data']
-                if 'k' in stream_data:  # Kline data
-                    kline = stream_data['k']
-                    
-                    # Only process closed candles
-                    if kline['x']:  # x = is_closed
-                        candle_data = {
-                            'symbol': kline['s'],
-                            'interval': kline['i'],
-                            'open_price': float(kline['o']),
-                            'close_price': float(kline['c']),
-                            'high_price': float(kline['h']),
-                            'low_price': float(kline['l']),
-                            'volume': float(kline['v']),
-                            'close_time': kline['T'],
-                            'connection_id': connection_id
-                        }
-                        
-                        # Calculate percentage change
-                        percent_change = ((candle_data['close_price'] - candle_data['open_price']) / 
-                                        candle_data['open_price']) * 100
-                        candle_data['percent_change'] = percent_change
-                        
-                        # Pass to message handler
-                        self.message_handler(candle_data)
-            
-        except json.JSONDecodeError:
-            logger.warning(f"Invalid JSON from connection {connection_id}")
         except Exception as e:
-            logger.error(f"Error handling message from connection {connection_id}: {e}")
+            logger.error(f"Error generating streams: {e}")
+            raise
     
-    async def update_streams(self, new_streams: Set[str]) -> None:
-        """Update active streams (requires reconnection)."""
-        if new_streams != self.active_streams:
-            logger.info(f"Updating streams: {len(new_streams)} new streams")
-            self.active_streams = new_streams
-            
-            # Stop current connections
-            await self.stop()
-            
-            # Start with new streams
-            await self.start_connections(new_streams)
-    
-    async def stop(self) -> None:
-        """Stop all WebSocket connections."""
-        logger.info("Stopping WebSocket connections")
-        self.should_stop = True
+    async def start(self):
+        """Запуск всех WebSocket соединений"""
+        if self.running:
+            return
         
-        # Close all connections
-        for connection in self.connections:
-            if connection and not connection.closed:
-                await connection.close()
+        self.running = True
+        logger.info("Starting WebSocket connections...")
+        
+        # Создаем соединения для каждой группы стримов
+        for i, stream_group in enumerate(self.all_streams):
+            asyncio.create_task(self._connect_group(i, stream_group))
+            # Небольшая задержка между подключениями
+            await asyncio.sleep(0.5)
+        
+        logger.info(f"Started {len(self.all_streams)} WebSocket connection tasks")
+    
+    async def stop(self):
+        """Остановка всех соединений"""
+        logger.info("Stopping WebSocket connections...")
+        self.running = False
+        
+        # Отменяем задачи переподключения
+        for task in self.reconnect_tasks:
+            task.cancel()
+        
+        # Закрываем все соединения
+        for ws in self.connections:
+            if not ws.closed:
+                await ws.close()
+        
+        # Закрываем сессии
+        for session in self.sessions:
+            await session.close()
         
         self.connections.clear()
+        self.sessions.clear()
+        
+        logger.info("All WebSocket connections stopped")
     
-    def get_connection_stats(self) -> Dict[str, Any]:
-        """Get connection statistics."""
+    async def _connect_group(self, group_id: int, streams: List[str]):
+        """Подключение группы стримов"""
+        while self.running:
+            try:
+                session = aiohttp.ClientSession()
+                self.sessions.append(session)
+                
+                # Формируем URL для множественных стримов
+                stream_names = "/".join(streams)
+                url = f"{config.BINANCE_WS_URL}/stream?streams={stream_names}"
+                
+                logger.info(f"Connecting WebSocket group {group_id} with {len(streams)} streams...")
+                
+                async with session.ws_connect(url) as ws:
+                    self.connections.append(ws)
+                    logger.info(f"WebSocket group {group_id} connected")
+                    
+                    # Обработка сообщений
+                    async for msg in ws:
+                        if msg.type == aiohttp.WSMsgType.TEXT:
+                            await self._process_message(msg.data)
+                        elif msg.type == aiohttp.WSMsgType.ERROR:
+                            logger.error(f"WebSocket error in group {group_id}: {ws.exception()}")
+                            self.stats['errors'] += 1
+                            break
+                        elif msg.type == aiohttp.WSMsgType.CLOSED:
+                            logger.warning(f"WebSocket group {group_id} closed")
+                            break
+                
+            except Exception as e:
+                logger.error(f"Error in WebSocket group {group_id}: {e}")
+                self.stats['errors'] += 1
+            
+            if self.running:
+                # Переподключение
+                self.stats['reconnects'] += 1
+                logger.info(f"Reconnecting WebSocket group {group_id} in {config.RECONNECT_DELAY} seconds...")
+                await asyncio.sleep(config.RECONNECT_DELAY)
+    
+    async def _process_message(self, raw_data: str):
+        """Обработка сообщения от Binance"""
+        try:
+            data = json.loads(raw_data)
+            
+            # Binance отправляет данные в формате: {"stream": "btcusdt@kline_1m", "data": {...}}
+            if 'data' in data:
+                kline_data = data['data']
+                
+                # Извлекаем информацию о свече
+                if kline_data.get('e') == 'kline':
+                    candle = self._parse_kline(kline_data)
+                    
+                    # Отправляем в обработчик
+                    await self.candle_callback(candle)
+                    
+                    # Обновляем статистику
+                    self.stats['messages_received'] += 1
+                    self.stats['last_message_time'] = datetime.now()
+            
+        except Exception as e:
+            logger.error(f"Error processing WebSocket message: {e}")
+            self.stats['errors'] += 1
+    
+    def _parse_kline(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Парсинг данных свечи"""
+        kline = data['k']
+        
         return {
-            'active_connections': len(self.connections),
-            'active_streams': len(self.active_streams),
-            'should_stop': self.should_stop,
-            'reconnect_delay': self.reconnect_delay
+            'symbol': data['s'],
+            'interval': kline['i'],
+            'open_time': kline['t'],
+            'close_time': kline['T'],
+            'open': float(kline['o']),
+            'high': float(kline['h']),
+            'low': float(kline['l']),
+            'close': float(kline['c']),
+            'volume': float(kline['v']),
+            'quote_volume': float(kline['q']),
+            'trades': kline['n'],
+            'is_closed': kline['x'],  # Свеча закрыта?
+            'timestamp': datetime.now()
         }
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Получение статистики"""
+        return {
+            **self.stats,
+            'active_connections': len([ws for ws in self.connections if not ws.closed]),
+            'total_connections': len(self.connections)
+        }
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Проверка здоровья соединений"""
+        active = 0
+        closed = 0
+        
+        for ws in self.connections:
+            if ws.closed:
+                closed += 1
+            else:
+                active += 1
+        
+        health = {
+            'healthy': active > 0,
+            'active_connections': active,
+            'closed_connections': closed,
+            'last_message_age': None
+        }
+        
+        if self.stats['last_message_time']:
+            age = (datetime.now() - self.stats['last_message_time']).total_seconds()
+            health['last_message_age'] = age
+            health['healthy'] = health['healthy'] and age < 60  # Нездорово если нет сообщений больше минуты
+        
+        return health
+
+
+class BinanceRESTClient:
+    """Клиент для REST API Binance"""
+    
+    def __init__(self):
+        self.session: Optional[aiohttp.ClientSession] = None
+    
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session:
+            await self.session.close()
+    
+    async def get_all_symbols(self) -> List[str]:
+        """Получение всех торговых пар"""
+        try:
+            async with self.session.get(f"{config.BINANCE_REST_URL}/fapi/v1/exchangeInfo") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Фильтруем только USDT пары со статусом TRADING
+                    symbols = [
+                        s['symbol'] for s in data['symbols']
+                        if s['symbol'].endswith('USDT') and s['status'] == 'TRADING'
+                    ]
+                    
+                    return symbols
+                else:
+                    logger.error(f"Failed to get symbols: {resp.status}")
+                    return []
+                    
+        except Exception as e:
+            logger.error(f"Error getting symbols: {e}")
+            return []
+    
+    async def get_top_symbols_by_volume(self, limit: int = 100) -> List[str]:
+        """Получение топ символов по объему"""
+        try:
+            async with self.session.get(f"{config.BINANCE_REST_URL}/fapi/v1/ticker/24hr") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Фильтруем USDT пары
+                    usdt_pairs = [
+                        item for item in data
+                        if item['symbol'].endswith('USDT')
+                    ]
+                    
+                    # Сортируем по объему
+                    usdt_pairs.sort(
+                        key=lambda x: float(x['quoteVolume']),
+                        reverse=True
+                    )
+                    
+                    # Возвращаем символы
+                    return [pair['symbol'] for pair in usdt_pairs[:limit]]
+                else:
+                    logger.error(f"Failed to get tickers: {resp.status}")
+                    return []
+                    
+        except Exception as e:
+            logger.error(f"Error getting top symbols: {e}")
+            return []

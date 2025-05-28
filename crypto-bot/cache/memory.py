@@ -1,237 +1,286 @@
-"""In-memory cache for high-performance operations."""
-
-import asyncio
+from typing import Dict, List, Set, Optional, Tuple, Any
 from collections import defaultdict, deque
-from typing import Dict, List, Set, Any, Optional, Tuple
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from config.settings import Config
-import structlog
+import asyncio
+import logging
+from contextlib import asynccontextmanager
 
-logger = structlog.get_logger()
+from config.settings import config
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PresetData:
+    """Данные пресета в памяти"""
+    id: int
+    user_id: int
+    name: str
+    pairs: List[str]
+    intervals: List[str]
+    percent_change: float
+    is_active: bool = True
+
+
+@dataclass
+class AlertRecord:
+    """Запись об отправленном алерте для дедупликации"""
+    user_id: int
+    symbol: str
+    interval: str
+    timestamp: datetime
+    percent_change: float
 
 
 class MemoryCache:
-    """High-performance in-memory cache."""
+    """Централизованный in-memory кеш для всех данных"""
     
     def __init__(self):
-        # User states for finite state machine
-        self.user_states: Dict[int, str] = {}
+        # FSM состояния пользователей
+        self.user_states: Dict[int, Dict[str, Any]] = {}
         
-        # Active presets structure: {symbol: {interval: {user_id: [preset_ids]}}}
+        # Активные пресеты: symbol -> interval -> user_id -> preset_ids
         self.active_subscriptions: Dict[str, Dict[str, Dict[int, List[int]]]] = defaultdict(
             lambda: defaultdict(lambda: defaultdict(list))
         )
         
-        # Reverse mapping: preset_id -> (user_id, symbol, interval, percent_change)
-        self.preset_mapping: Dict[int, Tuple[int, str, str, float]] = {}
+        # Все пресеты для быстрого доступа
+        self.presets: Dict[int, PresetData] = {}
         
-        # Candle buffer for processing
-        self.candle_buffer: deque = deque(maxsize=Config.CANDLE_QUEUE_SIZE)
-        
-        # Alert history to prevent spam
-        self.alert_history: deque = deque(maxsize=Config.ALERT_HISTORY_SIZE)
-        
-        # Gas price history (last 24 hours)
-        self.gas_price_history: deque = deque(maxsize=Config.CANDLE_HISTORY_SIZE)
-        
-        # Gas alert thresholds: {user_id: threshold_gwei}
+        # Газовые алерты: user_id -> threshold_gwei
         self.gas_alerts: Dict[int, float] = {}
         
-        # Rate limiting
-        self.user_message_counts: Dict[int, deque] = defaultdict(
-            lambda: deque(maxsize=Config.USER_RATE_LIMIT)
-        )
+        # История алертов для дедупликации
+        self.alert_history: deque = deque(maxlen=config.ALERT_HISTORY_SIZE)
+        self.alert_dedup: Dict[Tuple[int, str, str], datetime] = {}
         
-        # Statistics
+        # Блокировки для потокобезопасности
+        self._locks = {
+            'subscriptions': asyncio.Lock(),
+            'presets': asyncio.Lock(),
+            'gas_alerts': asyncio.Lock(),
+            'alerts': asyncio.Lock(),
+            'states': asyncio.Lock()
+        }
+        
+        # Статистика
         self.stats = {
-            'candles_processed': 0,
             'alerts_sent': 0,
-            'active_users': 0,
-            'active_presets': 0,
-            'memory_usage_mb': 0
+            'alerts_deduplicated': 0,
+            'cache_hits': 0,
+            'cache_misses': 0
         }
     
-    async def load_from_database(self, db_manager) -> None:
-        """Load active data from database into memory."""
-        try:
-            # Load active presets
-            presets = await db_manager.get_active_presets()
-            for preset in presets:
-                await self.add_preset_to_cache(preset)
-            
-            # Load gas alerts
-            gas_alerts = await db_manager.get_gas_alerts()
+    @asynccontextmanager
+    async def _lock(self, name: str):
+        """Контекстный менеджер для блокировок"""
+        async with self._locks[name]:
+            yield
+    
+    async def load_from_db(self, db_manager) -> None:
+        """Загрузка данных из БД при старте"""
+        logger.info("Loading data from database to cache...")
+        
+        # Загружаем активные пресеты
+        presets = await db_manager.get_all_active_presets()
+        async with self._lock('presets'):
+            for preset_data in presets:
+                preset = PresetData(
+                    id=preset_data['id'],
+                    user_id=preset_data['user_id'],
+                    name=preset_data['name'],
+                    pairs=preset_data['pairs'],
+                    intervals=preset_data['intervals'],
+                    percent_change=float(preset_data['percent_change']),
+                    is_active=preset_data['is_active']
+                )
+                self.presets[preset.id] = preset
+                
+                # Добавляем в активные подписки
+                if preset.is_active:
+                    for symbol in preset.pairs:
+                        for interval in preset.intervals:
+                            self.active_subscriptions[symbol][interval][preset.user_id].append(preset.id)
+        
+        # Загружаем газовые алерты
+        gas_alerts = await db_manager.get_all_active_gas_alerts()
+        async with self._lock('gas_alerts'):
             for alert in gas_alerts:
                 self.gas_alerts[alert['user_id']] = float(alert['threshold_gwei'])
-            
-            logger.info(f"Loaded {len(presets)} presets and {len(gas_alerts)} gas alerts into cache")
-            
-        except Exception as e:
-            logger.error(f"Failed to load data from database: {e}")
-            raise
+        
+        logger.info(f"Loaded {len(self.presets)} presets and {len(self.gas_alerts)} gas alerts")
     
-    async def add_preset_to_cache(self, preset: Dict[str, Any]) -> None:
-        """Add preset to active subscriptions cache."""
-        preset_id = preset['id']
-        user_id = preset['user_id']
-        pairs = preset['pairs']
-        intervals = preset['intervals']
-        percent_change = float(preset['percent_change'])
-        
-        for pair in pairs:
-            for interval in intervals:
-                self.active_subscriptions[pair][interval][user_id].append(preset_id)
-                self.preset_mapping[preset_id] = (user_id, pair, interval, percent_change)
-    
-    async def remove_preset_from_cache(self, preset_id: int) -> None:
-        """Remove preset from active subscriptions cache."""
-        if preset_id not in self.preset_mapping:
-            return
-        
-        user_id, symbol, interval, _ = self.preset_mapping[preset_id]
-        
-        # Remove from active subscriptions
-        if (symbol in self.active_subscriptions and 
-            interval in self.active_subscriptions[symbol] and
-            user_id in self.active_subscriptions[symbol][interval]):
+    # Управление пресетами
+    async def add_preset(self, preset: PresetData) -> None:
+        """Добавление пресета в кеш"""
+        async with self._lock('presets'):
+            self.presets[preset.id] = preset
             
-            preset_list = self.active_subscriptions[symbol][interval][user_id]
-            if preset_id in preset_list:
-                preset_list.remove(preset_id)
-                
-                # Clean empty structures
-                if not preset_list:
-                    del self.active_subscriptions[symbol][interval][user_id]
+            if preset.is_active:
+                for symbol in preset.pairs:
+                    for interval in preset.intervals:
+                        self.active_subscriptions[symbol][interval][preset.user_id].append(preset.id)
+    
+    async def remove_preset(self, preset_id: int) -> None:
+        """Удаление пресета из кеша"""
+        async with self._lock('presets'):
+            preset = self.presets.get(preset_id)
+            if not preset:
+                return
+            
+            # Удаляем из активных подписок
+            for symbol in preset.pairs:
+                for interval in preset.intervals:
+                    user_presets = self.active_subscriptions[symbol][interval].get(preset.user_id, [])
+                    if preset_id in user_presets:
+                        user_presets.remove(preset_id)
+                    
+                    # Удаляем пустые записи
+                    if not user_presets:
+                        self.active_subscriptions[symbol][interval].pop(preset.user_id, None)
                     if not self.active_subscriptions[symbol][interval]:
-                        del self.active_subscriptions[symbol][interval]
-                        if not self.active_subscriptions[symbol]:
-                            del self.active_subscriptions[symbol]
-        
-        # Remove from preset mapping
-        del self.preset_mapping[preset_id]
+                        self.active_subscriptions[symbol].pop(interval, None)
+                    if not self.active_subscriptions[symbol]:
+                        self.active_subscriptions.pop(symbol, None)
+            
+            # Удаляем сам пресет
+            del self.presets[preset_id]
     
-    def get_subscribers_for_symbol(self, symbol: str, interval: str) -> Dict[int, List[Tuple[int, float]]]:
-        """Get all subscribers for a symbol/interval with their preset configs."""
-        subscribers = {}
-        
-        if symbol in self.active_subscriptions and interval in self.active_subscriptions[symbol]:
-            for user_id, preset_ids in self.active_subscriptions[symbol][interval].items():
+    async def update_preset_status(self, preset_id: int, is_active: bool) -> None:
+        """Обновление статуса пресета"""
+        async with self._lock('presets'):
+            preset = self.presets.get(preset_id)
+            if not preset:
+                return
+            
+            if preset.is_active == is_active:
+                return
+            
+            preset.is_active = is_active
+            
+            if is_active:
+                # Добавляем в активные подписки
+                for symbol in preset.pairs:
+                    for interval in preset.intervals:
+                        self.active_subscriptions[symbol][interval][preset.user_id].append(preset_id)
+            else:
+                # Удаляем из активных подписок
+                for symbol in preset.pairs:
+                    for interval in preset.intervals:
+                        user_presets = self.active_subscriptions[symbol][interval].get(preset.user_id, [])
+                        if preset_id in user_presets:
+                            user_presets.remove(preset_id)
+    
+    async def get_subscribed_users(self, symbol: str, interval: str) -> Dict[int, List[PresetData]]:
+        """Получение пользователей, подписанных на symbol/interval"""
+        async with self._lock('subscriptions'):
+            result = {}
+            user_preset_ids = self.active_subscriptions.get(symbol, {}).get(interval, {})
+            
+            for user_id, preset_ids in user_preset_ids.items():
                 user_presets = []
                 for preset_id in preset_ids:
-                    if preset_id in self.preset_mapping:
-                        _, _, _, percent_change = self.preset_mapping[preset_id]
-                        user_presets.append((preset_id, percent_change))
+                    preset = self.presets.get(preset_id)
+                    if preset and preset.is_active:
+                        user_presets.append(preset)
+                
                 if user_presets:
-                    subscribers[user_id] = user_presets
-        
-        return subscribers
+                    result[user_id] = user_presets
+            
+            self.stats['cache_hits'] += 1
+            return result
     
-    def add_candle_to_buffer(self, candle_data: Dict[str, Any]) -> None:
-        """Add candle to processing buffer."""
-        if len(self.candle_buffer) >= Config.CANDLE_QUEUE_SIZE:
-            logger.warning("Candle buffer full, dropping oldest candle")
-        self.candle_buffer.append(candle_data)
+    # Управление газовыми алертами
+    async def set_gas_alert(self, user_id: int, threshold_gwei: float) -> None:
+        """Установка газового алерта"""
+        async with self._lock('gas_alerts'):
+            self.gas_alerts[user_id] = threshold_gwei
     
-    def get_candles_batch(self, batch_size: int = None) -> List[Dict[str, Any]]:
-        """Get batch of candles for processing."""
-        if batch_size is None:
-            batch_size = Config.BATCH_PROCESS_SIZE
-        
-        batch = []
-        for _ in range(min(batch_size, len(self.candle_buffer))):
-            if self.candle_buffer:
-                batch.append(self.candle_buffer.popleft())
-        return batch
+    async def remove_gas_alert(self, user_id: int) -> None:
+        """Удаление газового алерта"""
+        async with self._lock('gas_alerts'):
+            self.gas_alerts.pop(user_id, None)
     
-    def should_send_alert(self, user_id: int, symbol: str, interval: str, 
-                         percent_change: float) -> bool:
-        """Check if alert should be sent (dedupe logic)."""
-        current_time = datetime.now()
-        alert_key = f"{user_id}:{symbol}:{interval}:{abs(percent_change):.2f}"
-        
-        # Check recent alerts to prevent spam
-        for alert_time, key in reversed(list(self.alert_history)):
-            if current_time - alert_time > timedelta(minutes=5):
-                break
-            if key == alert_key:
+    async def get_gas_alerts_below(self, current_gwei: float) -> List[Tuple[int, float]]:
+        """Получение пользователей с порогом выше текущего газа"""
+        async with self._lock('gas_alerts'):
+            return [(user_id, threshold) for user_id, threshold in self.gas_alerts.items() 
+                    if threshold >= current_gwei]
+    
+    # Дедупликация алертов
+    async def should_send_alert(self, user_id: int, symbol: str, interval: str) -> bool:
+        """Проверка, нужно ли отправлять алерт (дедупликация)"""
+        async with self._lock('alerts'):
+            key = (user_id, symbol, interval)
+            last_sent = self.alert_dedup.get(key)
+            
+            now = datetime.now()
+            if last_sent and (now - last_sent).seconds < config.ALERT_DEDUP_WINDOW:
+                self.stats['alerts_deduplicated'] += 1
                 return False
-        
-        # Add to history
-        self.alert_history.append((current_time, alert_key))
-        return True
+            
+            self.alert_dedup[key] = now
+            
+            # Чистим старые записи
+            if len(self.alert_dedup) > 10000:
+                cutoff = now - timedelta(seconds=config.ALERT_DEDUP_WINDOW)
+                self.alert_dedup = {k: v for k, v in self.alert_dedup.items() if v > cutoff}
+            
+            return True
     
-    def can_send_message_to_user(self, user_id: int) -> bool:
-        """Check rate limit for user messages."""
-        current_time = datetime.now()
-        user_messages = self.user_message_counts[user_id]
-        
-        # Clean old messages (older than 1 minute)
-        while user_messages and current_time - user_messages[0] > timedelta(minutes=1):
-            user_messages.popleft()
-        
-        # Check limit
-        if len(user_messages) >= Config.USER_RATE_LIMIT:
-            return False
-        
-        # Add current message
-        user_messages.append(current_time)
-        return True
+    async def record_alert(self, alert: AlertRecord) -> None:
+        """Запись отправленного алерта"""
+        async with self._lock('alerts'):
+            self.alert_history.append(alert)
+            self.stats['alerts_sent'] += 1
     
-    def add_gas_price(self, price_gwei: float) -> None:
-        """Add gas price to history."""
-        current_time = datetime.now()
-        self.gas_price_history.append((current_time, price_gwei))
+    # FSM состояния
+    async def set_user_state(self, user_id: int, state: str, data: Optional[Dict[str, Any]] = None) -> None:
+        """Установка состояния пользователя"""
+        async with self._lock('states'):
+            self.user_states[user_id] = {
+                'state': state,
+                'data': data or {},
+                'timestamp': datetime.now()
+            }
     
-    def get_gas_price_trend(self, minutes: int = 60) -> Optional[Tuple[float, float]]:
-        """Get gas price trend over specified minutes."""
-        if len(self.gas_price_history) < 2:
-            return None
-        
-        current_time = datetime.now()
-        cutoff_time = current_time - timedelta(minutes=minutes)
-        
-        recent_prices = [price for time, price in self.gas_price_history 
-                        if time >= cutoff_time]
-        
-        if len(recent_prices) < 2:
-            return None
-        
-        return recent_prices[0], recent_prices[-1]  # oldest, newest
+    async def get_user_state(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Получение состояния пользователя"""
+        async with self._lock('states'):
+            return self.user_states.get(user_id)
     
-    def get_users_for_gas_threshold(self, current_price: float) -> List[int]:
-        """Get users who should receive gas alerts."""
-        return [user_id for user_id, threshold in self.gas_alerts.items() 
-                if current_price <= threshold]
+    async def clear_user_state(self, user_id: int) -> None:
+        """Очистка состояния пользователя"""
+        async with self._lock('states'):
+            self.user_states.pop(user_id, None)
     
-    def update_stats(self) -> None:
-        """Update cache statistics."""
-        self.stats['active_users'] = len(set(
-            user_id for symbol_subs in self.active_subscriptions.values()
-            for interval_subs in symbol_subs.values()
-            for user_id in interval_subs.keys()
-        ))
-        self.stats['active_presets'] = len(self.preset_mapping)
+    # Статистика
+    def get_stats(self) -> Dict[str, Any]:
+        """Получение статистики кеша"""
+        return {
+            **self.stats,
+            'total_presets': len(self.presets),
+            'active_presets': sum(1 for p in self.presets.values() if p.is_active),
+            'total_gas_alerts': len(self.gas_alerts),
+            'unique_symbols': len(self.active_subscriptions),
+            'dedup_cache_size': len(self.alert_dedup),
+            'alert_history_size': len(self.alert_history)
+        }
     
-    def get_all_required_streams(self) -> Set[str]:
-        """Get all required WebSocket streams."""
-        streams = set()
-        for symbol, intervals in self.active_subscriptions.items():
-            for interval in intervals.keys():
-                streams.add(f"{symbol.lower()}@kline_{interval}")
-        return streams
-    
-    def set_user_state(self, user_id: int, state: str) -> None:
-        """Set user FSM state."""
-        self.user_states[user_id] = state
-    
-    def get_user_state(self, user_id: int) -> Optional[str]:
-        """Get user FSM state."""
-        return self.user_states.get(user_id)
-    
-    def clear_user_state(self, user_id: int) -> None:
-        """Clear user FSM state."""
-        self.user_states.pop(user_id, None)
+    async def get_user_stats(self, user_id: int) -> Dict[str, Any]:
+        """Статистика для конкретного пользователя"""
+        async with self._lock('presets'):
+            user_presets = [p for p in self.presets.values() if p.user_id == user_id]
+            active_presets = [p for p in user_presets if p.is_active]
+            
+            return {
+                'total_presets': len(user_presets),
+                'active_presets': len(active_presets),
+                'has_gas_alert': user_id in self.gas_alerts,
+                'gas_threshold': self.gas_alerts.get(user_id)
+            }
 
 
-# Global cache instance
-memory_cache = MemoryCache()
+# Singleton instance
+cache = MemoryCache()
