@@ -4,8 +4,8 @@ from typing import Dict, Any
 
 from services.candle_alerts.websocket import BinanceWebSocketManager
 from services.candle_alerts.processor import CandleProcessor
+from cache.symbols_cache import symbols_cache
 from config.settings import config
-from services.binanceAPI.service import binance_api
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ class CandleAlertService:
         logger.info("Starting Candle Alert Service...")
         
         try:
-            # Обновляем список символов
-            await binance_api._fetch_all_futures_symbols
+            # Инициализируем кеш символов (один раз при старте)
+            await symbols_cache.initialize()
             
             # Запускаем обработчик свечей
             await self.processor.start()
@@ -58,6 +58,10 @@ class CandleAlertService:
         # Отменяем мониторинг
         if self.monitor_task:
             self.monitor_task.cancel()
+            try:
+                await self.monitor_task
+            except asyncio.CancelledError:
+                pass
         
         # Останавливаем WebSocket
         await self.ws_manager.stop()
@@ -66,7 +70,6 @@ class CandleAlertService:
         await self.processor.stop()
         
         logger.info("Candle Alert Service stopped")
-    
     
     async def _monitor_loop(self):
         """Цикл мониторинга состояния сервиса"""
@@ -90,7 +93,7 @@ class CandleAlertService:
                 # Логируем статистику
                 if self.running:
                     stats = self.get_stats()
-                    logger.info(f"Service stats: {stats}")
+                    logger.debug(f"Service stats: {stats}")
                 
             except Exception as e:
                 logger.error(f"Error in monitor loop: {e}")
@@ -99,6 +102,7 @@ class CandleAlertService:
         """Получение статистики сервиса"""
         return {
             'running': self.running,
+            'symbols_cache': symbols_cache.get_stats(),
             'websocket': self.ws_manager.get_stats(),
             'processor': self.processor.get_stats()
         }
@@ -111,6 +115,7 @@ class CandleAlertService:
         return {
             'healthy': self.running and ws_health['healthy'] and processor_health['processing'],
             'components': {
+                'symbols_cache': symbols_cache.get_stats(),
                 'websocket': ws_health,
                 'processor': processor_health
             }

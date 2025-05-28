@@ -1,9 +1,7 @@
-# api/binance_api.py
 import aiohttp
 import logging
-from typing import List, Dict, Optional
+from typing import List, Optional
 from datetime import datetime, timedelta
-from collections import defaultdict
 import asyncio
 
 from config.settings import config
@@ -12,12 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class BinanceAPIClient:
-    """Клиент для работы с API Binance Futures"""
+    """Клиент для работы с API Binance Futures - только запросы к API"""
     
     def __init__(self):
-        self.symbols_cache: List[str] = []
-        self.last_update: Optional[datetime] = None
-        self.cache_lock = asyncio.Lock()
         self.session: Optional[aiohttp.ClientSession] = None
         self._initialized = False
         
@@ -27,7 +22,6 @@ class BinanceAPIClient:
             return
             
         self.session = aiohttp.ClientSession()
-        await self._update_symbols_cache()
         self._initialized = True
         
     async def close(self):
@@ -36,85 +30,50 @@ class BinanceAPIClient:
             await self.session.close()
             self._initialized = False
             
-    async def _update_symbols_cache(self):
-        """Обновление кеша символов"""
-        async with self.cache_lock:
-            try:
-                symbols = await self._fetch_all_futures_symbols()
-                if symbols:
-                    self.symbols_cache = symbols
-                    self.last_update = datetime.now()
-                    logger.info(f"Updated symbols cache. Total symbols: {len(symbols)}")
-                else:
-                    # Если не удалось получить символы, используем базовые
-                    if not self.symbols_cache:
-                        self.symbols_cache = [
-                            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'XRPUSDT',
-                            'SOLUSDT', 'DOTUSDT', 'DOGEUSDT', 'AVAXUSDT', 'MATICUSDT'
-                        ]
-                        logger.warning("Using fallback symbols list")
-            except Exception as e:
-                logger.error(f"Failed to update symbols cache: {e}")
-                if not self.symbols_cache:
-                    # Устанавливаем минимальный набор для работы
-                    self.symbols_cache = ['BTCUSDT', 'ETHUSDT']
-                    logger.warning("Using minimal symbols list")
-                    
-    async def _fetch_all_futures_symbols(self) -> List[str]:
+    async def fetch_all_futures_symbols(self) -> List[str]:
         """Получение всех активных USDT фьючерсных пар с Binance"""
+        if not self._initialized:
+            await self.initialize()
+            
         try:
             if not self.session:
                 return []
                 
-            # Используем ticker endpoint - он возвращает только активные пары
-            url = f"{config.BINANCE_REST_URL}/fapi/v1/ticker/24hr"
+            # Используем exchangeInfo для получения только торгуемых пар
+            url = f"{config.BINANCE_REST_URL}/fapi/v1/exchangeInfo"
             
             async with self.session.get(url, timeout=10) as response:
                 if response.status != 200:
-                    logger.error(f"Failed to fetch active symbols. Status: {response.status}")
+                    logger.error(f"Failed to fetch exchange info. Status: {response.status}")
                     return []
                     
                 data = await response.json()
                 
-                # Извлекаем только USDT пары - если они в ticker, значит активны
-                symbols = [
-                    item['symbol'] for item in data 
-                    if item['symbol'].endswith('USDT')
-                ]
+                # Извлекаем только активные USDT пары
+                symbols = []
+                for symbol_info in data.get('symbols', []):
+                    symbol = symbol_info.get('symbol', '')
+                    status = symbol_info.get('status', '')
+                    
+                    # Только активные USDT пары
+                    if (symbol.endswith('USDT') and 
+                        status == 'TRADING' and
+                        symbol_info.get('contractType') == 'PERPETUAL'):
+                        symbols.append(symbol)
                 
-                logger.info(f"Found {len(symbols)} active USDT futures symbols")
+                logger.info(f"Fetched {len(symbols)} active perpetual USDT futures symbols from API")
                 return symbols
-                
-        except Exception as e:
-            logger.error(f"Error fetching active symbols from Binance: {e}")
-            return []
                 
         except Exception as e:
             logger.error(f"Error fetching symbols from Binance: {e}")
             return []
             
-    async def get_all_symbols(self, force_update: bool = False) -> List[str]:
-        """Получение всех доступных символов"""
-        # Проверяем инициализацию
+    async def fetch_top_symbols_by_volume(self, limit: int = 100) -> List[str]:
+        """Получение топ символов по объему"""
         if not self._initialized:
             await self.initialize()
             
-        async with self.cache_lock:
-            # Обновляем кеш если он пустой или устарел (старше 1 часа)
-            if (not self.symbols_cache or 
-                force_update or 
-                (self.last_update and 
-                 (datetime.now() - self.last_update) > timedelta(hours=1))):
-                await self._update_symbols_cache()
-                
-            return self.symbols_cache.copy()
-            
-    async def get_top_symbols_by_volume(self, limit: int = 100) -> List[str]:
-        """Получение топ символов по объему"""
         try:
-            if not self._initialized:
-                await self.initialize()
-                
             if not self.session:
                 return []
                 
@@ -141,8 +100,7 @@ class BinanceAPIClient:
                 
         except Exception as e:
             logger.error(f"Error fetching top symbols: {e}")
-            # Возвращаем кешированные символы как fallback
-            return self.symbols_cache[:limit] if self.symbols_cache else []
+            return []
 
 
 # Singleton instance

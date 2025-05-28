@@ -14,9 +14,9 @@ class Config:
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     
     # Binance
-    BINANCE_WS_URL: str = "wss://fstream.binance.com/ws"
+    BINANCE_WS_URL: str = "wss://fstream.binance.com"
     BINANCE_REST_URL: str = "https://fapi.binance.com"
-    MAX_STREAMS_PER_CONNECTION: int = 400
+    MAX_STREAMS_PER_CONNECTION: int = 750
     RECONNECT_DELAY: int = 5
     RECONNECT_MAX_ATTEMPTS: int = 10
     

@@ -4,15 +4,14 @@ import logging
 from typing import List, Dict, Any, Optional, Callable
 from datetime import datetime
 import aiohttp
-from collections import defaultdict
-from services.binanceAPI.service import binance_api
+from cache.symbols_cache import symbols_cache
 from config.settings import config
 
 logger = logging.getLogger(__name__)
 
 
 class BinanceWebSocketManager:
-    """Менеджер WebSocket подключений к Binance"""
+    """Менеджер WebSocket подключений к Binance - только WebSocket логика"""
     
     def __init__(self, candle_callback: Callable):
         self.candle_callback = candle_callback
@@ -20,7 +19,7 @@ class BinanceWebSocketManager:
         self.sessions: List[aiohttp.ClientSession] = []
         self.running = False
         self.reconnect_tasks = []
-        self.all_streams = []
+        self.stream_groups = []
         
         # Статистика
         self.stats = {
@@ -30,43 +29,51 @@ class BinanceWebSocketManager:
             'last_message_time': None
         }
     
-    async def _generate_all_streams(self):
-        """Генерация всех возможных стримов на основе реальных данных"""
+    def _generate_streams(self):
+        """Генерация стримов на основе символов из кеша"""
+        all_symbols = symbols_cache.get_all_symbols()
+        
+        if not all_symbols:
+            logger.error("No symbols available in cache")
+            return
+            
+        logger.info(f"Generating streams for {len(all_symbols)} symbols")
+            
+        # Генерируем стримы для всех комбинаций символ/интервал
+        streams = []
+        for symbol in all_symbols:
+            for interval in config.SUPPORTED_INTERVALS:
+                stream_name = f"{symbol.lower()}@kline_{interval}"
+                streams.append(stream_name)
+        
+        # Разбиваем на группы по конфигу
+        stream_groups = []
+        for i in range(0, len(streams), config.MAX_STREAMS_PER_CONNECTION):
+            group = streams[i:i + config.MAX_STREAMS_PER_CONNECTION]
+            stream_groups.append(group)
+        
+        self.stream_groups = stream_groups
+        logger.info(f"Generated {len(self.stream_groups)} stream groups with {len(streams)} total streams")
+            
+    async def _test_single_stream(self, symbol: str, interval: str) -> bool:
+        """Тестирование одного стрима"""
         try:
-            # Получаем все активные символы из API
-            all_symbols = await binance_api._get_all_symbols()
+            test_session = aiohttp.ClientSession()
+            stream_name = f"{symbol.lower()}@kline_{interval}"
+            url = f"{config.BINANCE_WS_URL}/ws/{stream_name}"
             
-            if not all_symbols:
-                logger.error("No symbols received from Binance API")
-                # Используем проверенные символы для тестирования
-                all_symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'SOLUSDT']
-                logger.info(f"Using fallback symbols: {all_symbols}")
+            async with test_session.ws_connect(url, timeout=aiohttp.ClientTimeout(total=5)) as ws:
+                # Ждем одно сообщение для проверки
+                msg = await asyncio.wait_for(ws.receive(), timeout=3.0)
+                await test_session.close()
+                return msg.type == aiohttp.WSMsgType.TEXT
                 
-            # Генерируем стримы для всех комбинаций символ/интервал
-            streams = []
-            for symbol in all_symbols[:50]:  # Берем топ 50 для стабильности
-                for interval in config.SUPPORTED_INTERVALS:
-                    streams.append(f"{symbol.lower()}@kline_{interval}")
-            
-            # Разбиваем на группы
-            stream_groups = []
-            for i in range(0, len(streams), config.MAX_STREAMS_PER_CONNECTION):
-                group = streams[i:i + config.MAX_STREAMS_PER_CONNECTION]
-                stream_groups.append(group)
-            
-            self.all_streams = stream_groups
-            logger.info(f"Generated {len(self.all_streams)} stream groups with {len(streams)} total streams")
-            
         except Exception as e:
-            logger.error(f"Error generating streams: {e}")
-            # Используем минимальный набор для работы
-            basic_streams = []
-            for symbol in ['BTCUSDT', 'ETHUSDT']:
-                for interval in ['1m', '5m']:
-                    basic_streams.append(f"{symbol.lower()}@kline_{interval}")
-            self.all_streams = [basic_streams]
-            logger.info("Using minimal stream set for testing")
-    
+            logger.debug(f"Stream {stream_name} test failed: {e}")
+            return False
+        finally:
+            if test_session and not test_session.closed:
+                await test_session.close()
     
     async def start(self):
         """Запуск всех WebSocket соединений"""
@@ -76,21 +83,21 @@ class BinanceWebSocketManager:
         self.running = True
         logger.info("Starting WebSocket connections...")
         
-        # Генерируем стримы
-        await self._generate_all_streams()
+        # Генерируем стримы на основе кеша
+        self._generate_streams()
         
-        if not self.all_streams:
-            logger.error("No streams to connect to")
+        if not self.stream_groups:
+            logger.error("No stream groups to connect to")
             return
         
         # Создаем соединения для каждой группы стримов
-        for i, stream_group in enumerate(self.all_streams):
+        for i, stream_group in enumerate(self.stream_groups):
             task = asyncio.create_task(self._connect_group(i, stream_group))
             self.reconnect_tasks.append(task)
             # Небольшая задержка между подключениями
             await asyncio.sleep(0.5)
         
-        logger.info(f"Started {len(self.all_streams)} WebSocket connection tasks")
+        logger.info(f"Started {len(self.stream_groups)} WebSocket connection tasks")
     
     async def stop(self):
         """Остановка всех соединений"""
@@ -100,6 +107,10 @@ class BinanceWebSocketManager:
         # Отменяем задачи переподключения
         for task in self.reconnect_tasks:
             task.cancel()
+        
+        # Ждем завершения задач
+        if self.reconnect_tasks:
+            await asyncio.gather(*self.reconnect_tasks, return_exceptions=True)
         
         # Закрываем все соединения
         for ws in self.connections:
@@ -122,6 +133,7 @@ class BinanceWebSocketManager:
         max_retries = config.RECONNECT_MAX_ATTEMPTS
         
         while self.running and retries < max_retries:
+            session = None
             try:
                 session = aiohttp.ClientSession()
                 
@@ -158,14 +170,9 @@ class BinanceWebSocketManager:
                             break
                 
             except aiohttp.ClientResponseError as e:
-                if e.status == 404:
-                    logger.error(f"WebSocket 404 error - invalid streams in group {group_id}")
-                    # При 404 не переподключаемся - проблема в стримах
-                    break
-                else:
-                    logger.error(f"HTTP error in WebSocket group {group_id}: {e}")
-                    self.stats['errors'] += 1
-                    retries += 1
+                logger.error(f"HTTP error in WebSocket group {group_id}: {e}")
+                self.stats['errors'] += 1
+                retries += 1
             except Exception as e:
                 logger.error(f"Error in WebSocket group {group_id}: {e}")
                 self.stats['errors'] += 1
@@ -173,9 +180,10 @@ class BinanceWebSocketManager:
             
             finally:
                 # Очищаем соединение из списков
-                if session in self.sessions:
+                if session and session in self.sessions:
                     self.sessions.remove(session)
-                await session.close()
+                if session:
+                    await session.close()
             
             if self.running and retries < max_retries:
                 # Переподключение с экспоненциальной задержкой
@@ -236,7 +244,8 @@ class BinanceWebSocketManager:
         return {
             **self.stats,
             'active_connections': len([ws for ws in self.connections if not ws.closed]),
-            'total_connections': len(self.connections)
+            'total_connections': len(self.connections),
+            'stream_groups': len(self.stream_groups)
         }
     
     async def health_check(self) -> Dict[str, Any]:
