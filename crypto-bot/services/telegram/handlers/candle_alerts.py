@@ -4,11 +4,11 @@ from aiogram.fsm.state import State, StatesGroup
 from typing import List, Dict, Any, Optional
 import logging
 import re
-import aiohttp
 
 from services.telegram.keyboards import Keyboards
 from models.database import db_manager
 from cache.memory import cache, PresetData
+from cache.symbols_cache import symbols_cache
 from config.settings import config
 from utils.queue import message_queue, Priority
 
@@ -82,61 +82,67 @@ async def process_preset_name(message: types.Message, state: FSMContext):
 
 
 async def preset_pairs_top100(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор топ 100 пар"""
+    """Выбор топ 100 пар из кеша"""
     await callback.answer("Загружаю топ 100 пар...")
     
-    try:
-        # Получаем топ 100 пар с Binance
-        pairs = await get_top_pairs_by_volume(100)
-        
-        if not pairs:
-            await callback.message.edit_text(
-                "❌ Не удалось загрузить список пар. Попробуйте позже.",
-                reply_markup=Keyboards.back_button("candle_alerts")
-            )
-            return
-        
-        # Сохраняем пары
-        await state.update_data(pairs=pairs[:config.MAX_PAIRS_PER_PRESET])
-        
-        # Переходим к выбору интервалов
-        await show_intervals_selection(callback.message, state)
-        
-    except Exception as e:
-        logger.error(f"Error loading top 100 pairs: {e}")
+    # Получаем пары из кеша памяти
+    pairs = symbols_cache.get_top_symbols(100)
+    
+    if not pairs:
         await callback.message.edit_text(
-            "❌ Произошла ошибка при загрузке пар.",
+            "❌ Символы не загружены в кеш. Попробуйте позже.",
             reply_markup=Keyboards.back_button("candle_alerts")
         )
+        return
+    
+    # Сохраняем пары (ограничиваем по лимиту)
+    selected_pairs = pairs[:config.MAX_PAIRS_PER_PRESET]
+    await state.update_data(pairs=selected_pairs)
+    
+    # Показываем выбранные пары
+    await callback.message.edit_text(
+        f"✅ Выбрано {len(selected_pairs)} пар из топ-100:\n" +
+        ", ".join(selected_pairs[:10]) +
+        (f"\n...и еще {len(selected_pairs) - 10}" if len(selected_pairs) > 10 else ""),
+        reply_markup=Keyboards.intervals_selection(),
+        parse_mode="HTML"
+    )
+    
+    # Переходим к выбору интервалов
+    await state.set_state(PresetStates.selecting_intervals)
+    await state.update_data(selected_intervals=[])
 
 
 async def preset_pairs_volume(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор пар по объему за 24ч"""
+    """Выбор пар по объему из кеша"""
     await callback.answer("Загружаю пары по объему...")
     
-    try:
-        # Получаем топ 50 пар по объему за 24ч
-        pairs = await get_top_pairs_by_volume(50)
-        
-        if not pairs:
-            await callback.message.edit_text(
-                "❌ Не удалось загрузить список пар. Попробуйте позже.",
-                reply_markup=Keyboards.back_button("candle_alerts")
-            )
-            return
-        
-        # Сохраняем пары
-        await state.update_data(pairs=pairs[:config.MAX_PAIRS_PER_PRESET])
-        
-        # Переходим к выбору интервалов
-        await show_intervals_selection(callback.message, state)
-        
-    except Exception as e:
-        logger.error(f"Error loading volume pairs: {e}")
+    # Получаем топ 50 пар из кеша (они уже отсортированы по объему)
+    pairs = symbols_cache.get_top_symbols(50)
+    
+    if not pairs:
         await callback.message.edit_text(
-            "❌ Произошла ошибка при загрузке пар.",
+            "❌ Символы не загружены в кеш. Попробуйте позже.",
             reply_markup=Keyboards.back_button("candle_alerts")
         )
+        return
+    
+    # Сохраняем пары
+    selected_pairs = pairs[:config.MAX_PAIRS_PER_PRESET]
+    await state.update_data(pairs=selected_pairs)
+    
+    # Показываем выбранные пары
+    await callback.message.edit_text(
+        f"✅ Выбрано {len(selected_pairs)} пар по объему:\n" +
+        ", ".join(selected_pairs[:10]) +
+        (f"\n...и еще {len(selected_pairs) - 10}" if len(selected_pairs) > 10 else ""),
+        reply_markup=Keyboards.intervals_selection(),
+        parse_mode="HTML"
+    )
+    
+    # Переходим к выбору интервалов
+    await state.set_state(PresetStates.selecting_intervals)
+    await state.update_data(selected_intervals=[])
 
 
 async def preset_pairs_manual(callback: types.CallbackQuery, state: FSMContext):
@@ -176,12 +182,12 @@ async def process_manual_pairs(message: types.Message, state: FSMContext):
             f"⚠️ Взято первые {config.MAX_PAIRS_PER_PRESET} пар из введенных."
         )
     
-    # Проверяем существование пар на Binance
-    valid_pairs = await validate_pairs(pairs)
+    # Проверяем пары против кеша символов
+    valid_pairs = symbols_cache.validate_symbols(pairs)
     
     if not valid_pairs:
         await message.answer(
-            "❌ Ни одна из введенных пар не найдена на Binance.",
+            "❌ Ни одна из введенных пар не найдена в списке поддерживаемых.",
             reply_markup=Keyboards.cancel_button("candle_alerts")
         )
         return
@@ -503,63 +509,6 @@ async def preset_delete_confirm(callback: types.CallbackQuery):
     
     # Возвращаемся к списку
     await preset_list(callback)
-
-
-# Вспомогательные функции
-
-async def get_top_pairs_by_volume(limit: int) -> List[str]:
-    """Получение топ пар по объему с Binance"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{config.BINANCE_REST_URL}/fapi/v1/ticker/24hr"
-            ) as response:
-                if response.status != 200:
-                    return []
-                
-                data = await response.json()
-                
-                # Фильтруем только USDT пары и сортируем по объему
-                usdt_pairs = [
-                    item for item in data 
-                    if item['symbol'].endswith('USDT')
-                ]
-                
-                # Сортируем по объему в USDT
-                usdt_pairs.sort(
-                    key=lambda x: float(x['quoteVolume']), 
-                    reverse=True
-                )
-                
-                # Возвращаем только символы
-                return [pair['symbol'] for pair in usdt_pairs[:limit]]
-                
-    except Exception as e:
-        logger.error(f"Error getting top pairs: {e}")
-        return []
-
-
-async def validate_pairs(pairs: List[str]) -> List[str]:
-    """Проверка существования пар на Binance"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                f"{config.BINANCE_REST_URL}/fapi/v1/exchangeInfo"
-            ) as response:
-                if response.status != 200:
-                    return pairs  # Возвращаем как есть если не можем проверить
-                
-                data = await response.json()
-                
-                # Получаем список всех символов
-                valid_symbols = {s['symbol'] for s in data['symbols']}
-                
-                # Фильтруем только существующие
-                return [p for p in pairs if p in valid_symbols]
-                
-    except Exception as e:
-        logger.error(f"Error validating pairs: {e}")
-        return pairs  # Возвращаем как есть при ошибке
 
 
 def register_candle_alerts_handlers(dp: Dispatcher):

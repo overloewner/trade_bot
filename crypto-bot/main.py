@@ -7,14 +7,7 @@ import asyncio
 import logging
 import signal
 import sys
-import os
 from typing import Optional
-
-# Исправление кодировки для Windows
-if os.name == 'nt':  # Windows
-    import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 from config.settings import config
 from services.telegram.bot import telegram_bot
@@ -71,7 +64,7 @@ class CryptoBot:
             telegram_task = asyncio.create_task(telegram_bot.start())
             
             # Ждем немного для инициализации
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             
             # Запускаем остальные сервисы
             await candle_alert_service.start()
@@ -136,16 +129,25 @@ class CryptoBot:
         logger.info("Telegram Bot: Running")
         
         # Статистика свечных алертов
-        candle_stats = candle_alert_service.get_stats()
-        logger.info(f"Candle Alerts: {candle_stats}")
+        try:
+            candle_stats = candle_alert_service.get_stats()
+            logger.info(f"Candle Alerts: {candle_stats}")
+        except Exception as e:
+            logger.error(f"Error getting candle stats: {e}")
         
         # Статистика газ алертов
-        gas_stats = gas_alert_service.get_stats()
-        logger.info(f"Gas Alerts: {gas_stats}")
+        try:
+            gas_stats = gas_alert_service.get_stats()
+            logger.info(f"Gas Alerts: {gas_stats}")
+        except Exception as e:
+            logger.error(f"Error getting gas stats: {e}")
         
         # Статистика очереди сообщений
-        queue_stats = message_queue.get_stats()
-        logger.info(f"Message Queue: {queue_stats}")
+        try:
+            queue_stats = message_queue.get_stats()
+            logger.info(f"Message Queue: {queue_stats}")
+        except Exception as e:
+            logger.error(f"Error getting queue stats: {e}")
 
 
 # Глобальный инстанс
