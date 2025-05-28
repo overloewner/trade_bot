@@ -208,6 +208,10 @@ class BinanceWebSocketManager:
                 if kline_data.get('e') == 'kline':
                     candle = self._parse_kline(kline_data)
                     
+                    # Логируем только закрытые свечи
+                    if candle['is_closed']:
+                        logger.debug(f"Received closed candle: {candle['symbol']} {candle['interval']} {candle['close']}")
+                    
                     # Отправляем в обработчик
                     await self.candle_callback(candle)
                     

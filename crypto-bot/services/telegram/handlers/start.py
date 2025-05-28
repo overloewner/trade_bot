@@ -171,7 +171,17 @@ async def callback_stats(callback: types.CallbackQuery):
     await callback.answer()
 
 
-# Вспомогательные функции для других модулей
+async def callback_candle_alerts(callback: types.CallbackQuery):
+    """Показ меню свечных алертов"""
+    await show_candle_alerts_menu(callback)
+
+
+async def callback_gas_alerts(callback: types.CallbackQuery):
+    """Показ меню газ алертов"""
+    await show_gas_alerts_menu(callback)
+
+
+# Вспомогательные функции
 async def show_candle_alerts_menu(message_or_callback):
     """Показ меню свечных алертов"""
     text = (
@@ -246,11 +256,5 @@ def register_start_handlers(dp: Dispatcher):
     dp.callback_query.register(callback_main_menu, lambda c: c.data == "main_menu")
     dp.callback_query.register(callback_help, lambda c: c.data == "help")
     dp.callback_query.register(callback_stats, lambda c: c.data == "stats")
-    dp.callback_query.register(
-        lambda c: show_candle_alerts_menu(c), 
-        lambda c: c.data == "candle_alerts"
-    )
-    dp.callback_query.register(
-        lambda c: show_gas_alerts_menu(c), 
-        lambda c: c.data == "gas_alerts"
-    )
+    dp.callback_query.register(callback_candle_alerts, lambda c: c.data == "candle_alerts")
+    dp.callback_query.register(callback_gas_alerts, lambda c: c.data == "gas_alerts")

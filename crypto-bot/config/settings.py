@@ -28,7 +28,7 @@ class Config:
     
     # User limits
     MAX_PRESETS_PER_USER: int = 10
-    MAX_PAIRS_PER_PRESET: int = 50
+    MAX_PAIRS_PER_PRESET: int = 250
     MAX_ALERTS_PER_MESSAGE: int = 50
     
     # Performance
