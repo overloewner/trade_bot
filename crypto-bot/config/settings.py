@@ -16,7 +16,7 @@ class Config:
     # Binance
     BINANCE_WS_URL: str = "wss://fstream.binance.com/ws"
     BINANCE_REST_URL: str = "https://fapi.binance.com"
-    MAX_STREAMS_PER_CONNECTION: int = 750
+    MAX_STREAMS_PER_CONNECTION: int = 400
     RECONNECT_DELAY: int = 5
     RECONNECT_MAX_ATTEMPTS: int = 10
     
@@ -65,14 +65,13 @@ class Config:
     MIN_PERCENT_CHANGE: float = 0.1
     MAX_PERCENT_CHANGE: float = 100.0
     
-    @classmethod
-    def validate(cls) -> None:
+    def validate(self) -> None:
         """Валидация обязательных параметров"""
-        if not cls.BOT_TOKEN:
+        if not self.BOT_TOKEN:
             raise ValueError("BOT_TOKEN не установлен")
-        if not cls.ETHERSCAN_API_KEY:
+        if not self.ETHERSCAN_API_KEY:
             raise ValueError("ETHERSCAN_API_KEY не установлен")
-        if not cls.DATABASE_URL:
+        if not self.DATABASE_URL:
             raise ValueError("DATABASE_URL не установлен")
 
 

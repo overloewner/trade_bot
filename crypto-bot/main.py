@@ -7,7 +7,14 @@ import asyncio
 import logging
 import signal
 import sys
+import os
 from typing import Optional
+
+# Исправление кодировки для Windows
+if os.name == 'nt':  # Windows
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 from config.settings import config
 from services.telegram.bot import telegram_bot
@@ -21,7 +28,7 @@ logging.basicConfig(
     format=config.LOG_FORMAT,
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('crypto_bot.log')
+        logging.FileHandler('crypto_bot.log', encoding='utf-8')
     ]
 )
 
