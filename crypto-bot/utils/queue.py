@@ -1,237 +1,267 @@
-"""Message queue utilities."""
-
 import asyncio
-import heapq
-from collections import defaultdict, deque
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime
+from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
-from config.settings import Config
-import structlog
+from datetime import datetime
+from collections import defaultdict, deque
+import heapq
+import logging
+from enum import Enum
 
-logger = structlog.get_logger()
+from config.settings import config
+from utils.rate_limiter import telegram_limiter
+
+logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Alert:
-    """Alert message structure."""
-    user_id: int
-    symbol: str
-    interval: str
-    percent_change: float
-    price: float
-    timestamp: datetime
-    priority: int = field(default=0)
+class Priority(Enum):
+    """Приоритеты сообщений"""
+    LOW = 3
+    NORMAL = 2
+    HIGH = 1
+    URGENT = 0
+
+
+@dataclass(order=True)
+class Message:
+    """Сообщение в очереди"""
+    priority: int = field(compare=True)
+    timestamp: datetime = field(compare=False)
+    user_id: int = field(compare=False)
+    content: str = field(compare=False)
+    reply_markup: Optional[Any] = field(default=None, compare=False)
+    parse_mode: str = field(default="HTML", compare=False)
     
-    def __lt__(self, other):
-        """For priority queue ordering (higher priority first)."""
-        return self.priority > other.priority
+    def __post_init__(self):
+        if isinstance(self.priority, Priority):
+            self.priority = self.priority.value
 
 
 @dataclass
-class BatchedMessage:
-    """Batched message for sending."""
+class AlertBatch:
+    """Батч алертов для отправки"""
     user_id: int
-    alerts: List[Alert]
-    created_at: datetime = field(default_factory=datetime.now)
+    alerts: List[Dict[str, Any]]
+    priority: Priority = Priority.NORMAL
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 class MessageQueue:
-    """High-performance message queue with batching and prioritization."""
+    """Очередь сообщений с приоритетами и батчингом"""
     
-    def __init__(self):
-        # Priority queue for alerts (higher percentage changes get priority)
-        self.alert_queue: List[Alert] = []
+    def __init__(self, bot_instance=None):
+        self.bot = bot_instance
+        self.user_queues: Dict[int, List[Message]] = defaultdict(list)
+        self.alert_batches: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+        self.processing = False
+        self._lock = asyncio.Lock()
         
-        # Pending alerts per user for batching
-        self.user_pending_alerts: Dict[int, List[Alert]] = defaultdict(list)
-        
-        # Batch send queue
-        self.batch_queue: asyncio.Queue = asyncio.Queue(maxsize=10000)
-        
-        # Gas alerts queue (separate for different handling)
-        self.gas_alert_queue: asyncio.Queue = asyncio.Queue(maxsize=1000)
-        
-        # Statistics
+        # Статистика
         self.stats = {
-            'alerts_queued': 0,
-            'alerts_sent': 0,
-            'batches_created': 0,
+            'messages_sent': 0,
+            'batches_sent': 0,
+            'errors': 0,
             'queue_size': 0
         }
     
-    def add_price_alert(self, user_id: int, symbol: str, interval: str, 
-                       percent_change: float, price: float) -> None:
-        """Add price alert to queue with priority."""
-        # Calculate priority based on percentage change magnitude
-        priority = min(int(abs(percent_change) * 10), 100)
-        
-        alert = Alert(
-            user_id=user_id,
-            symbol=symbol,
-            interval=interval,
-            percent_change=percent_change,
-            price=price,
-            timestamp=datetime.now(),
-            priority=priority
-        )
-        
-        # Add to priority queue
-        heapq.heappush(self.alert_queue, alert)
-        self.stats['alerts_queued'] += 1
-        
-        logger.debug(f"Added alert for {symbol} {interval} {percent_change:.2f}% (priority: {priority})")
+    def set_bot(self, bot_instance):
+        """Установка инстанса бота"""
+        self.bot = bot_instance
     
-    async def add_gas_alert(self, user_ids: List[int], current_price: float, 
-                           threshold: float) -> None:
-        """Add gas price alert."""
-        gas_alert = {
-            'user_ids': user_ids,
-            'current_price': current_price,
-            'threshold': threshold,
-            'timestamp': datetime.now()
-        }
-        
-        try:
-            await self.gas_alert_queue.put(gas_alert)
-        except asyncio.QueueFull:
-            logger.warning("Gas alert queue full, dropping alert")
+    async def add_message(self, user_id: int, content: str, 
+                         priority: Priority = Priority.NORMAL,
+                         reply_markup: Optional[Any] = None,
+                         parse_mode: str = "HTML") -> None:
+        """Добавление сообщения в очередь"""
+        async with self._lock:
+            message = Message(
+                priority=priority,
+                timestamp=datetime.now(),
+                user_id=user_id,
+                content=content,
+                reply_markup=reply_markup,
+                parse_mode=parse_mode
+            )
+            heapq.heappush(self.user_queues[user_id], message)
+            self.stats['queue_size'] += 1
     
-    async def process_alerts(self) -> None:
-        """Process alerts and create batches."""
-        while True:
-            try:
-                # Process price alerts
-                await self._process_price_alerts()
-                
-                # Create batches for users with pending alerts
-                await self._create_batches()
-                
-                # Small delay to prevent busy waiting
-                await asyncio.sleep(0.1)
-                
-            except Exception as e:
-                logger.error(f"Error processing alerts: {e}")
-                await asyncio.sleep(1)
-    
-    async def _process_price_alerts(self) -> None:
-        """Process price alerts from priority queue."""
-        batch_size = min(Config.BATCH_PROCESS_SIZE, len(self.alert_queue))
-        
-        for _ in range(batch_size):
-            if not self.alert_queue:
-                break
+    async def add_alert(self, user_id: int, alert: Dict[str, Any],
+                       priority: Priority = Priority.NORMAL) -> None:
+        """Добавление алерта для батчинга"""
+        async with self._lock:
+            self.alert_batches[user_id].append(alert)
             
-            alert = heapq.heappop(self.alert_queue)
-            
-            # Group by user for batching
-            self.user_pending_alerts[alert.user_id].append(alert)
-            
-            # If user has enough alerts, create batch immediately
-            if len(self.user_pending_alerts[alert.user_id]) >= Config.ALERT_BATCH_SIZE:
-                await self._create_batch_for_user(alert.user_id)
+            # Если достигли лимита батча, отправляем
+            if len(self.alert_batches[user_id]) >= config.MAX_ALERTS_PER_MESSAGE:
+                await self._flush_user_alerts(user_id, priority)
     
-    async def _create_batches(self) -> None:
-        """Create batches for users with pending alerts."""
-        current_time = datetime.now()
-        users_to_batch = []
-        
-        # Find users with old pending alerts (force batching after 30 seconds)
-        for user_id, alerts in self.user_pending_alerts.items():
-            if alerts and (current_time - alerts[0].timestamp).total_seconds() > 30:
-                users_to_batch.append(user_id)
-        
-        # Create batches for these users
-        for user_id in users_to_batch:
-            await self._create_batch_for_user(user_id)
+    async def add_alerts_bulk(self, alerts: List[Tuple[int, Dict[str, Any]]],
+                             priority: Priority = Priority.NORMAL) -> None:
+        """Массовое добавление алертов"""
+        async with self._lock:
+            # Группируем по пользователям
+            user_alerts = defaultdict(list)
+            for user_id, alert in alerts:
+                user_alerts[user_id].append(alert)
+            
+            # Добавляем в батчи
+            for user_id, user_alert_list in user_alerts.items():
+                self.alert_batches[user_id].extend(user_alert_list)
+                
+                # Отправляем полные батчи
+                while len(self.alert_batches[user_id]) >= config.MAX_ALERTS_PER_MESSAGE:
+                    await self._flush_user_alerts(user_id, priority)
     
-    async def _create_batch_for_user(self, user_id: int) -> None:
-        """Create batch message for specific user."""
-        if user_id not in self.user_pending_alerts or not self.user_pending_alerts[user_id]:
+    async def _flush_user_alerts(self, user_id: int, priority: Priority) -> None:
+        """Отправка накопленных алертов пользователю"""
+        if not self.alert_batches[user_id]:
             return
         
-        alerts = self.user_pending_alerts[user_id][:Config.ALERT_BATCH_SIZE]
-        self.user_pending_alerts[user_id] = self.user_pending_alerts[user_id][Config.ALERT_BATCH_SIZE:]
+        # Берем до MAX_ALERTS_PER_MESSAGE алертов
+        alerts_to_send = self.alert_batches[user_id][:config.MAX_ALERTS_PER_MESSAGE]
+        self.alert_batches[user_id] = self.alert_batches[user_id][config.MAX_ALERTS_PER_MESSAGE:]
         
-        # Clean up empty lists
-        if not self.user_pending_alerts[user_id]:
-            del self.user_pending_alerts[user_id]
+        # Форматируем сообщение
+        content = self._format_alerts(alerts_to_send)
         
-        # Sort alerts by priority for better presentation
-        alerts.sort(key=lambda x: x.priority, reverse=True)
-        
-        batch = BatchedMessage(user_id=user_id, alerts=alerts)
-        
-        try:
-            await self.batch_queue.put(batch)
-            self.stats['batches_created'] += 1
-        except asyncio.QueueFull:
-            logger.warning(f"Batch queue full, dropping batch for user {user_id}")
+        # Добавляем в очередь сообщений
+        await self.add_message(user_id, content, priority)
     
-    async def get_batch_message(self) -> Optional[BatchedMessage]:
-        """Get next batch message to send."""
-        try:
-            return await asyncio.wait_for(self.batch_queue.get(), timeout=1.0)
-        except asyncio.TimeoutError:
-            return None
-    
-    async def get_gas_alert(self) -> Optional[Dict]:
-        """Get next gas alert to send."""
-        try:
-            return await asyncio.wait_for(self.gas_alert_queue.get(), timeout=1.0)
-        except asyncio.TimeoutError:
-            return None
-    
-    def format_alert_message(self, batch: BatchedMessage) -> str:
-        """Format batch of alerts into readable message."""
-        if not batch.alerts:
-            return ""
+    def _format_alerts(self, alerts: List[Dict[str, Any]]) -> str:
+        """Форматирование алертов в одно сообщение"""
+        lines = ["🔔 <b>Свечные алерты:</b>\n"]
         
-        # Group alerts by symbol for better readability
-        symbol_groups = defaultdict(list)
-        for alert in batch.alerts:
-            symbol_groups[alert.symbol].append(alert)
+        # Группируем по интервалам для читаемости
+        by_interval = defaultdict(list)
+        for alert in alerts:
+            by_interval[alert['interval']].append(alert)
         
-        message_parts = ["🚨 **Crypto Alerts** 🚨\n"]
-        
-        for symbol, alerts in symbol_groups.items():
-            message_parts.append(f"\n**{symbol}**:")
-            
-            for alert in alerts:
-                direction = "📈" if alert.percent_change > 0 else "📉"
-                message_parts.append(
-                    f"{direction} {alert.interval}: {alert.percent_change:+.2f}% "
-                    f"(${alert.price:.4f})"
+        for interval, interval_alerts in sorted(by_interval.items()):
+            lines.append(f"\n<b>Интервал {interval}:</b>")
+            for alert in interval_alerts[:10]:  # Максимум 10 на интервал
+                symbol = alert['symbol']
+                change = alert['percent_change']
+                direction = "📈" if change > 0 else "📉"
+                lines.append(
+                    f"{direction} {symbol}: {change:+.2f}%"
                 )
         
-        message_parts.append(f"\n⏰ {datetime.now().strftime('%H:%M:%S')}")
+        # Если алертов слишком много, показываем сводку
+        total_alerts = sum(len(alerts) for alerts in by_interval.values())
+        if total_alerts > 30:
+            lines.append(f"\n<i>...и еще {total_alerts - 30} алертов</i>")
         
-        return "\n".join(message_parts)
+        return "\n".join(lines)
     
-    def format_gas_alert_message(self, gas_alert: Dict) -> str:
-        """Format gas alert message."""
-        current_price = gas_alert['current_price']
-        threshold = gas_alert['threshold']
+    async def flush_all_alerts(self) -> None:
+        """Отправка всех накопленных алертов"""
+        async with self._lock:
+            user_ids = list(self.alert_batches.keys())
+            for user_id in user_ids:
+                if self.alert_batches[user_id]:
+                    await self._flush_user_alerts(user_id, Priority.NORMAL)
+    
+    async def start_processing(self) -> None:
+        """Запуск обработки очереди"""
+        if self.processing:
+            return
         
-        return (
-            f"⛽ **Gas Alert** ⛽\n\n"
-            f"Gas price dropped to **{current_price:.1f} Gwei**\n"
-            f"Your threshold: {threshold:.1f} Gwei\n\n"
-            f"⏰ {datetime.now().strftime('%H:%M:%S')}"
-        )
+        self.processing = True
+        asyncio.create_task(self._process_loop())
+        logger.info("Message queue processing started")
     
-    def get_queue_stats(self) -> Dict[str, Any]:
-        """Get queue statistics."""
-        self.stats['queue_size'] = len(self.alert_queue)
-        return self.stats.copy()
+    async def stop_processing(self) -> None:
+        """Остановка обработки"""
+        self.processing = False
+        await self.flush_all_alerts()
+        logger.info("Message queue processing stopped")
     
-    def clear_user_alerts(self, user_id: int) -> None:
-        """Clear all pending alerts for user."""
-        if user_id in self.user_pending_alerts:
-            cleared_count = len(self.user_pending_alerts[user_id])
-            del self.user_pending_alerts[user_id]
-            logger.debug(f"Cleared {cleared_count} pending alerts for user {user_id}")
+    async def _process_loop(self) -> None:
+        """Основной цикл обработки сообщений"""
+        while self.processing:
+            try:
+                await self._process_batch()
+                await asyncio.sleep(0.1)  # Небольшая пауза между батчами
+            except Exception as e:
+                logger.error(f"Error in message processing loop: {e}")
+                await asyncio.sleep(1)
+    
+    async def _process_batch(self) -> None:
+        """Обработка батча сообщений"""
+        if not self.bot:
+            return
+        
+        # Получаем приоритетные сообщения
+        messages_to_send = await self._get_priority_messages(10)
+        
+        for message in messages_to_send:
+            try:
+                # Rate limiting
+                await telegram_limiter.acquire_for_user(message.user_id)
+                
+                # Отправка
+                await self.bot.send_message(
+                    chat_id=message.user_id,
+                    text=message.content,
+                    reply_markup=message.reply_markup,
+                    parse_mode=message.parse_mode
+                )
+                
+                self.stats['messages_sent'] += 1
+                
+            except Exception as e:
+                logger.error(f"Error sending message to {message.user_id}: {e}")
+                self.stats['errors'] += 1
+                
+                # Возвращаем сообщение в очередь если это не критическая ошибка
+                if "bot was blocked" not in str(e).lower():
+                    await self.add_message(
+                        message.user_id,
+                        message.content,
+                        Priority(message.priority),
+                        message.reply_markup,
+                        message.parse_mode
+                    )
+    
+    async def _get_priority_messages(self, limit: int) -> List[Message]:
+        """Получение сообщений с наивысшим приоритетом"""
+        async with self._lock:
+            all_messages = []
+            
+            # Собираем все сообщения из очередей пользователей
+            for user_id, queue in self.user_queues.items():
+                if queue:
+                    all_messages.extend(queue)
+            
+            # Сортируем по приоритету
+            all_messages.sort(key=lambda m: (m.priority, m.timestamp))
+            
+            # Берем первые limit сообщений
+            messages_to_send = all_messages[:limit]
+            
+            # Удаляем их из очередей
+            for message in messages_to_send:
+                self.user_queues[message.user_id].remove(message)
+                if not self.user_queues[message.user_id]:
+                    del self.user_queues[message.user_id]
+            
+            self.stats['queue_size'] -= len(messages_to_send)
+            
+            return messages_to_send
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Получение статистики очереди"""
+        return {
+            **self.stats,
+            'users_in_queue': len(self.user_queues),
+            'pending_alerts': sum(len(alerts) for alerts in self.alert_batches.values()),
+            'total_pending': self.stats['queue_size'] + sum(len(alerts) for alerts in self.alert_batches.values())
+        }
+    
+    async def get_user_queue_size(self, user_id: int) -> int:
+        """Получение размера очереди для пользователя"""
+        async with self._lock:
+            return len(self.user_queues.get(user_id, [])) + len(self.alert_batches.get(user_id, []))
 
 
-# Global message queue instance
+# Глобальный инстанс
 message_queue = MessageQueue()

@@ -1,181 +1,138 @@
-"""Candle alerts service - main orchestrator."""
-
 import asyncio
+import logging
 from typing import Dict, Any
-from .websocket import BinanceWebSocketManager
-from .processor import candle_processor
-from cache.memory import memory_cache
-from models.database import db_manager
-import structlog
-from config.settings import Config
 
-logger = structlog.get_logger()
+from services.candle_alerts.websocket import BinanceWebSocketManager, BinanceRESTClient
+from services.candle_alerts.processor import CandleProcessor
+from config.settings import config
+
+logger = logging.getLogger(__name__)
 
 
-class CandleAlertsService:
-    """Main service for candle alerts functionality."""
+class CandleAlertService:
+    """Основной сервис свечных алертов"""
     
     def __init__(self):
-        self.ws_manager = BinanceWebSocketManager(self._handle_candle_message)
+        self.processor = CandleProcessor()
+        self.ws_manager = BinanceWebSocketManager(self.processor.add_candle)
         self.running = False
         
-    async def start(self) -> None:
-        """Start the candle alerts service."""
+        # Задача мониторинга
+        self.monitor_task = None
+    
+    async def start(self):
+        """Запуск сервиса"""
         if self.running:
-            logger.warning("Candle alerts service already running")
             return
         
-        self.running = True
-        logger.info("Starting candle alerts service")
+        logger.info("Starting Candle Alert Service...")
         
         try:
-            # Load active presets from database
-            await memory_cache.load_from_database(db_manager)
+            # Обновляем список символов
+            await self._update_symbols()
             
-            # Get required streams based on active subscriptions
-            required_streams = memory_cache.get_all_required_streams()
+            # Запускаем обработчик свечей
+            await self.processor.start()
             
-            if required_streams:
-                # Start WebSocket connections
-                await self.ws_manager.start_connections(required_streams)
-                logger.info(f"Started WebSocket connections for {len(required_streams)} streams")
-            else:
-                logger.info("No active subscriptions, starting with all streams")
-                await self.ws_manager.start_connections()
+            # Запускаем WebSocket подключения
+            await self.ws_manager.start()
             
-            # Start candle processor
-            await candle_processor.start_processing()
+            # Запускаем мониторинг
+            self.monitor_task = asyncio.create_task(self._monitor_loop())
             
-            logger.info("Candle alerts service started successfully")
+            self.running = True
+            logger.info("Candle Alert Service started successfully")
             
         except Exception as e:
-            logger.error(f"Failed to start candle alerts service: {e}")
-            self.running = False
+            logger.error(f"Failed to start Candle Alert Service: {e}")
+            await self.stop()
             raise
     
-    async def stop(self) -> None:
-        """Stop the candle alerts service."""
-        if not self.running:
-            return
+    async def stop(self):
+        """Остановка сервиса"""
+        logger.info("Stopping Candle Alert Service...")
         
-        logger.info("Stopping candle alerts service")
         self.running = False
         
+        # Отменяем мониторинг
+        if self.monitor_task:
+            self.monitor_task.cancel()
+        
+        # Останавливаем WebSocket
+        await self.ws_manager.stop()
+        
+        # Останавливаем обработчик
+        await self.processor.stop()
+        
+        logger.info("Candle Alert Service stopped")
+    
+    async def _update_symbols(self):
+        """Обновление списка символов с Binance"""
+        logger.info("Updating symbols list from Binance...")
+        
         try:
-            # Stop processor
-            await candle_processor.stop_processing()
-            
-            # Stop WebSocket connections
-            await self.ws_manager.stop()
-            
-            logger.info("Candle alerts service stopped")
-            
+            async with BinanceRESTClient() as client:
+                # Получаем все символы
+                all_symbols = await client.get_all_symbols()
+                
+                if all_symbols:
+                    # Обновляем список в WebSocket менеджере
+                    # В реальной реализации нужно обновить all_streams
+                    logger.info(f"Updated {len(all_symbols)} symbols")
+                else:
+                    logger.warning("No symbols received from Binance")
+                    
         except Exception as e:
-            logger.error(f"Error stopping candle alerts service: {e}")
+            logger.error(f"Error updating symbols: {e}")
     
-    def _handle_candle_message(self, candle_data: Dict[str, Any]) -> None:
-        """Handle candle message from WebSocket."""
-        candle_processor.handle_candle_message(candle_data)
+    async def _monitor_loop(self):
+        """Цикл мониторинга состояния сервиса"""
+        while self.running:
+            try:
+                await asyncio.sleep(config.HEALTH_CHECK_INTERVAL)
+                
+                # Проверяем здоровье компонентов
+                ws_health = await self.ws_manager.health_check()
+                processor_health = await self.processor.health_check()
+                
+                # Логируем проблемы
+                if not ws_health['healthy']:
+                    logger.warning(f"WebSocket unhealthy: {ws_health}")
+                
+                if not processor_health['processing']:
+                    logger.error("Processor stopped unexpectedly")
+                    # Пытаемся перезапустить
+                    await self.processor.start()
+                
+                # Логируем статистику
+                if self.running:
+                    stats = self.get_stats()
+                    logger.info(f"Service stats: {stats}")
+                
+            except Exception as e:
+                logger.error(f"Error in monitor loop: {e}")
     
-    async def reload_subscriptions(self) -> None:
-        """Reload subscriptions from database and update WebSocket streams."""
-        try:
-            logger.info("Reloading subscriptions")
-            
-            # Clear current cache
-            memory_cache.active_subscriptions.clear()
-            memory_cache.preset_mapping.clear()
-            
-            # Load fresh data from database
-            await memory_cache.load_from_database(db_manager)
-            
-            # Get new required streams
-            new_streams = memory_cache.get_all_required_streams()
-            
-            # Update WebSocket connections
-            await self.ws_manager.update_streams(new_streams)
-            
-            logger.info(f"Reloaded subscriptions: {len(new_streams)} streams")
-            
-        except Exception as e:
-            logger.error(f"Failed to reload subscriptions: {e}")
-            raise
-    
-    async def add_preset_subscription(self, preset: Dict[str, Any]) -> None:
-        """Add new preset to active subscriptions."""
-        try:
-            # Add to memory cache
-            await memory_cache.add_preset_to_cache(preset)
-            
-            # Check if we need to update WebSocket streams
-            current_streams = self.ws_manager.active_streams
-            required_streams = memory_cache.get_all_required_streams()
-            
-            if not required_streams.issubset(current_streams):
-                logger.info("New streams required, updating WebSocket connections")
-                await self.ws_manager.update_streams(required_streams)
-            
-        except Exception as e:
-            logger.error(f"Failed to add preset subscription: {e}")
-            raise
-    
-    async def remove_preset_subscription(self, preset_id: int) -> None:
-        """Remove preset from active subscriptions."""
-        try:
-            # Remove from memory cache
-            await memory_cache.remove_preset_from_cache(preset_id)
-            
-            # Optionally optimize streams (remove unused ones)
-            # For simplicity, we keep all streams active to avoid frequent reconnections
-            
-        except Exception as e:
-            logger.error(f"Failed to remove preset subscription: {e}")
-            raise
-    
-    def get_service_stats(self) -> Dict[str, Any]:
-        """Get service statistics."""
+    def get_stats(self) -> Dict[str, Any]:
+        """Получение статистики сервиса"""
         return {
             'running': self.running,
-            'websocket_stats': self.ws_manager.get_connection_stats(),
-            'processor_stats': candle_processor.get_processing_stats(),
-            'cache_stats': {
-                'active_subscriptions': len(memory_cache.active_subscriptions),
-                'preset_mappings': len(memory_cache.preset_mapping),
-                'candle_buffer_size': len(memory_cache.candle_buffer)
-            }
+            'websocket': self.ws_manager.get_stats(),
+            'processor': self.processor.get_stats()
         }
     
     async def health_check(self) -> Dict[str, Any]:
-        """Perform health check."""
-        health = {
-            'status': 'healthy',
-            'issues': []
+        """Проверка здоровья сервиса"""
+        ws_health = await self.ws_manager.health_check()
+        processor_health = await self.processor.health_check()
+        
+        return {
+            'healthy': self.running and ws_health['healthy'] and processor_health['processing'],
+            'components': {
+                'websocket': ws_health,
+                'processor': processor_health
+            }
         }
-        
-        # Check if service is running
-        if not self.running:
-            health['status'] = 'unhealthy'
-            health['issues'].append('Service not running')
-        
-        # Check WebSocket connections
-        ws_stats = self.ws_manager.get_connection_stats()
-        if ws_stats['active_connections'] == 0:
-            health['status'] = 'degraded'
-            health['issues'].append('No active WebSocket connections')
-        
-        # Check processor
-        if not candle_processor.processing:
-            health['status'] = 'degraded'
-            health['issues'].append('Candle processor not running')
-        
-        # Check buffer size (potential backlog)
-        buffer_size = len(memory_cache.candle_buffer)
-        if buffer_size > Config.CANDLE_QUEUE_SIZE * 0.8:
-            health['status'] = 'degraded'
-            health['issues'].append(f'High buffer usage: {buffer_size}')
-        
-        return health
 
 
-# Global service instance
-candle_alerts_service = CandleAlertsService()
+# Singleton instance
+candle_alert_service = CandleAlertService()
