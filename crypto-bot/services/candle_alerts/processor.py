@@ -140,6 +140,9 @@ class CandleProcessor:
         alerts_to_send = []
         
         for user_id, presets in subscribed_users.items():
+            # Проверяем пресеты пока не найдем первый подходящий
+            alert_sent = False
+            
             for preset in presets:
                 # Проверяем порог
                 if abs(price_change) >= preset.percent_change:
@@ -166,13 +169,18 @@ class CandleProcessor:
                         timestamp=datetime.now(),
                         percent_change=float(price_change)
                     ))
-                else:
-                    logger.debug(f"Alert not triggered for user {user_id}: {abs(price_change)}% < {preset.percent_change}%")
+                    
+                    # ОСТАНАВЛИВАЕМСЯ - не проверяем остальные пресеты этого пользователя
+                    alert_sent = True
+                    break
+            
+            if not alert_sent:
+                logger.debug(f"No alerts triggered for user {user_id}: {abs(price_change)}% below all thresholds")
         
         # Отправляем алерты через message_queue
         if alerts_to_send:
             self.stats['alerts_generated'] += len(alerts_to_send)
-            logger.info(f"Sending {len(alerts_to_send)} alerts for {symbol} {interval}")
+            logger.info(f"Sending {len(alerts_to_send)} unique alerts for {symbol} {interval}")
             await message_queue.add_alerts_bulk(alerts_to_send, Priority.HIGH)
         else:
             logger.debug(f"No alerts to send for {symbol} {interval}")
