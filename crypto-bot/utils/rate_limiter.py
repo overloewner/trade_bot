@@ -2,6 +2,7 @@ import asyncio
 from typing import Dict, Optional
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
+from config.settings import config
 import time
 import logging
 
@@ -92,13 +93,13 @@ class TelegramRateLimiter:
     
     def __init__(self):
         # Глобальный лимит: 30 сообщений в секунду
-        self.global_limiter = RateLimiter(30, 1.0, burst=40)
-        
-        # Лимит по чатам: 20 сообщений в минуту на чат
+        self.global_limiter = RateLimiter(
+            config.TELEGRAM_GLOBAL_RATE_LIMIT, 
+            1.0, 
+            burst=config.TELEGRAM_BURST_SIZE
+        )
         self.chat_limiters: Dict[int, RateLimiter] = {}
-        
-        # Лимит по пользователям: 1 сообщение в секунду
-        self.user_limiter = UserRateLimiter(1, 1.0)
+        self.user_limiter = UserRateLimiter(config.TELEGRAM_USER_RATE_LIMIT, 1.0)
         
         self._lock = asyncio.Lock()
         self.stats = defaultdict(int)
@@ -121,7 +122,7 @@ class TelegramRateLimiter:
         """Проверка лимита для чата"""
         async with self._lock:
             if chat_id not in self.chat_limiters:
-                self.chat_limiters[chat_id] = RateLimiter(20, 60.0)
+                self.chat_limiters[chat_id] = RateLimiter(config.TELEGRAM_CHAT_RATE_LIMIT, 60.0)
         
         return await self.chat_limiters[chat_id].acquire()
     
@@ -158,7 +159,7 @@ class AdaptiveRateLimiter:
         
         self._lock = asyncio.Lock()
         self._last_adjustment = time.time()
-        self._adjustment_interval = 60.0  # Корректировка раз в минуту
+        self._adjustment_interval = config.ADAPTIVE_LIMITER_ADJUSTMENT_INTERVAL  # Корректировка раз в минуту
     
     async def acquire(self, n: int = 1) -> float:
         """Получение разрешения с адаптацией"""
@@ -206,5 +207,5 @@ class AdaptiveRateLimiter:
 
 # Глобальные инстансы для разных сервисов
 telegram_limiter = TelegramRateLimiter()
-binance_limiter = RateLimiter(1200, 60.0)  # 1200 запросов в минуту
-etherscan_limiter = RateLimiter(5, 1.0)  # 5 запросов в секунду
+binance_limiter = RateLimiter(config.BINANCE_RATE_LIMIT, config.BINANCE_RATE_PERIOD)  # 1200 запросов в минуту
+etherscan_limiter = RateLimiter(config.ETHERSCAN_RATE_LIMIT, config.ETHERSCAN_RATE_PERIOD)  # 5 запросов в секунду

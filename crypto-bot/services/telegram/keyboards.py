@@ -177,25 +177,27 @@ class Keyboards:
     @staticmethod
     def percent_presets() -> InlineKeyboardMarkup:
         """Пресеты процентов"""
-        keyboard = [
-            [
-                InlineKeyboardButton(text="0.5%", callback_data="percent_0.5"),
-                InlineKeyboardButton(text="1%", callback_data="percent_1"),
-                InlineKeyboardButton(text="2%", callback_data="percent_2")
-            ],
-            [
-                InlineKeyboardButton(text="3%", callback_data="percent_3"),
-                InlineKeyboardButton(text="5%", callback_data="percent_5"),
-                InlineKeyboardButton(text="10%", callback_data="percent_10")
-            ],
-            [
-                InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="percent_manual")
-            ],
-            [
-                InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
-            ]
+        keyboard = []
+        
+        # Первый ряд
+        first_row = [
+            InlineKeyboardButton(
+                text=f"{preset}%", 
+                callback_data=f"percent_{preset}"
+            ) 
+            for preset in config.PERCENT_PRESETS[:3]
         ]
-        return InlineKeyboardMarkup(inline_keyboard=keyboard)
+        keyboard.append(first_row)
+        
+        # Второй ряд  
+        second_row = [
+            InlineKeyboardButton(
+                text=f"{preset}%", 
+                callback_data=f"percent_{preset}"
+            ) 
+            for preset in config.PERCENT_PRESETS[3:]
+        ]
+        keyboard.append(second_row)
     
     @staticmethod
     def gas_alerts_menu(has_alert: bool, threshold: Optional[float] = None) -> InlineKeyboardMarkup:
@@ -233,25 +235,27 @@ class Keyboards:
     @staticmethod
     def gas_threshold_presets() -> InlineKeyboardMarkup:
         """Пресеты порогов газа"""
-        keyboard = [
-            [
-                InlineKeyboardButton(text="10 Gwei", callback_data="gas_10"),
-                InlineKeyboardButton(text="15 Gwei", callback_data="gas_15"),
-                InlineKeyboardButton(text="20 Gwei", callback_data="gas_20")
-            ],
-            [
-                InlineKeyboardButton(text="25 Gwei", callback_data="gas_25"),
-                InlineKeyboardButton(text="30 Gwei", callback_data="gas_30"),
-                InlineKeyboardButton(text="50 Gwei", callback_data="gas_50")
-            ],
-            [
-                InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="gas_manual")
-            ],
-            [
-                InlineKeyboardButton(text="❌ Отмена", callback_data="gas_alerts")
-            ]
+        keyboard = []
+        
+        # Первый ряд
+        first_row = [
+            InlineKeyboardButton(
+                text=f"{preset} Gwei", 
+                callback_data=f"gas_{preset}"
+            ) 
+            for preset in config.GAS_PRESETS[:3]
         ]
-        return InlineKeyboardMarkup(inline_keyboard=keyboard)
+        keyboard.append(first_row)
+        
+        # Второй ряд
+        second_row = [
+            InlineKeyboardButton(
+                text=f"{preset} Gwei", 
+                callback_data=f"gas_{preset}"
+            ) 
+            for preset in config.GAS_PRESETS[3:]
+        ]
+        keyboard.append(second_row)
     
     @staticmethod
     def back_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:

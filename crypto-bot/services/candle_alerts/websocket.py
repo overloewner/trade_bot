@@ -62,9 +62,9 @@ class BinanceWebSocketManager:
             stream_name = f"{symbol.lower()}@kline_{interval}"
             url = f"{config.BINANCE_WS_URL}/ws/{stream_name}"
             
-            async with test_session.ws_connect(url, timeout=aiohttp.ClientTimeout(total=5)) as ws:
+            async with test_session.ws_connect(url, timeout=aiohttp.ClientTimeout(total=config.WS_CONNECT_TIMEOUT)) as ws:
                 # Ждем одно сообщение для проверки
-                msg = await asyncio.wait_for(ws.receive(), timeout=3.0)
+                msg = await asyncio.wait_for(ws.receive(), timeout=config.WS_TEST_TIMEOUT)
                 await test_session.close()
                 return msg.type == aiohttp.WSMsgType.TEXT
                 
@@ -145,8 +145,8 @@ class BinanceWebSocketManager:
                 
                 async with session.ws_connect(
                     url, 
-                    timeout=aiohttp.ClientTimeout(total=30),
-                    heartbeat=30
+                    timeout=aiohttp.ClientTimeout(total=config.WS_CONNECTION_TIMEOUT),
+                    heartbeat=config.WS_HEARTBEAT_INTERVAL
                 ) as ws:
                     self.sessions.append(session)
                     self.connections.append(ws)
@@ -187,7 +187,7 @@ class BinanceWebSocketManager:
             
             if self.running and retries < max_retries:
                 # Переподключение с экспоненциальной задержкой
-                delay = min(config.RECONNECT_DELAY * (2 ** retries), 60)
+                delay = min(config.RECONNECT_DELAY * (config.WS_RECONNECT_EXPONENTIAL_BASE ** retries), config.WS_RECONNECT_MAX_DELAY)
                 self.stats['reconnects'] += 1
                 logger.info(f"Reconnecting WebSocket group {group_id} in {delay} seconds...")
                 await asyncio.sleep(delay)

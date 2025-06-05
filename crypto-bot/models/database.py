@@ -67,8 +67,8 @@ class DatabaseManager:
             config.DATABASE_URL,
             min_size=10,
             max_size=config.DB_POOL_SIZE,
-            max_queries=50000,
-            max_inactive_connection_lifetime=600,
+            max_queries=config.DB_MAX_QUERIES,
+max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
         )
         await self._create_tables()
     

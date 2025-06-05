@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class PriceAnalyzer:
     def __init__(self):
-        getcontext().prec = 8
+        getcontext().prec = config.DECIMAL_PRECISION
         self._zero = Decimal(0)
         
     def calculate_change(self, open_price: float, close_price: float) -> Decimal:
@@ -91,7 +91,7 @@ class CandleProcessor:
                 try:
                     candle = await asyncio.wait_for(
                         self.candle_queue.get(),
-                        timeout=1.0
+                        timeout=config.PROCESSOR_TIMEOUT
                     )
                 except asyncio.TimeoutError:
                     continue

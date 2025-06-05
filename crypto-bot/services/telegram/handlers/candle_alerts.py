@@ -53,9 +53,9 @@ async def process_preset_name(message: types.Message, state: FSMContext):
     """Обработка названия пресета"""
     name = message.text.strip()
     
-    if len(name) > 100:
+    if len(name) > config.PRESET_NAME_MAX_LENGTH:
         await message.answer(
-            "❌ Название слишком длинное. Максимум 100 символов.",
+            f"❌ Название слишком длинное. Максимум {config.PRESET_NAME_MAX_LENGTH} символов.",
             reply_markup=Keyboards.cancel_button("candle_alerts")
         )
         return

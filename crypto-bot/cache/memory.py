@@ -217,11 +217,10 @@ class MemoryCache:
         async with self._lock('gas_alerts'):
             self.gas_alerts.pop(user_id, None)
     
-    async def get_gas_alerts_below(self, current_gwei: float) -> List[Tuple[int, float]]:
-        """Получение пользователей с порогом выше текущего газа"""
+    async def get_all_gas_alerts(self) -> List[Tuple[int, float]]:
+        """Получение всех активных газовых алертов"""
         async with self._lock('gas_alerts'):
-            return [(user_id, threshold) for user_id, threshold in self.gas_alerts.items() 
-                    if threshold >= current_gwei]
+            return list(self.gas_alerts.items())
     
     # Дедупликация алертов - УБРАНА
     async def record_alert(self, alert: AlertRecord) -> None:

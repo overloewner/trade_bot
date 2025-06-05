@@ -1,42 +1,36 @@
 import asyncio
 import logging
-from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime, timedelta
-from collections import deque
-import aiohttp
+from typing import Optional, Dict, Any, List, Tuple
+from datetime import datetime
 
+from services.etherscan.service import etherscan_service
 from cache.memory import cache
 from utils.queue import message_queue, Priority
-from utils.rate_limiter import etherscan_limiter
 from config.settings import config
 
 logger = logging.getLogger(__name__)
 
 
 class GasAlertService:
-    """Сервис мониторинга цены газа Ethereum"""
+    """Сервис мониторинга цены газа с триггерами пересечения"""
     
     def __init__(self):
         self.running = False
         self.monitor_task = None
         
-        # История цен газа (timestamp, price_gwei)
-        self.gas_history: deque = deque(maxlen=config.GAS_HISTORY_SIZE)
-        
-        # Последняя известная цена
-        self.last_gas_price: Optional[float] = None
+        # Текущая цена газа
+        self.current_gas_price: Optional[float] = None
         self.last_check_time: Optional[datetime] = None
         
-        # Кеш уведомленных пользователей (чтобы не спамить)
-        self.notified_users: Dict[int, datetime] = {}
-        self.notification_cooldown = 3600  # 1 час между уведомлениями
+        # Предыдущая цена для отслеживания пересечений
+        self.previous_gas_price: Optional[float] = None
         
         # Статистика
         self.stats = {
             'checks_performed': 0,
             'alerts_sent': 0,
             'api_errors': 0,
-            'last_error': None
+            'crossings_detected': 0
         }
     
     async def start(self):
@@ -45,6 +39,9 @@ class GasAlertService:
             return
         
         logger.info("Starting Gas Alert Service...")
+        
+        # Инициализируем Etherscan сервис
+        await etherscan_service.initialize()
         
         self.running = True
         self.monitor_task = asyncio.create_task(self._monitor_loop())
@@ -64,121 +61,86 @@ class GasAlertService:
             except asyncio.CancelledError:
                 pass
         
+        await etherscan_service.close()
         logger.info("Gas Alert Service stopped")
     
     async def _monitor_loop(self):
         """Основной цикл мониторинга"""
         while self.running:
             try:
-                # Проверяем цену газа
                 await self._check_gas_price()
-                
-                # Ждем до следующей проверки
                 await asyncio.sleep(config.GAS_CHECK_INTERVAL)
                 
             except Exception as e:
                 logger.error(f"Error in gas monitor loop: {e}")
-                self.stats['last_error'] = str(e)
                 await asyncio.sleep(config.GAS_CHECK_INTERVAL)
     
     async def _check_gas_price(self):
-        """Проверка текущей цены газа"""
+        """Проверка цены газа и поиск пересечений"""
         try:
-            # Rate limiting
-            await etherscan_limiter.acquire()
+            # Получаем текущую цену
+            new_price = await etherscan_service.get_gas_price()
             
-            # Получаем цену газа
-            gas_price = await self._fetch_gas_price()
-            
-            if gas_price is None:
+            if new_price is None:
+                self.stats['api_errors'] += 1
                 return
             
-            # Сохраняем в истории
-            self.gas_history.append({
-                'timestamp': datetime.now(),
-                'price': gas_price
-            })
-            
-            self.last_gas_price = gas_price
+            # Сохраняем предыдущую цену
+            self.previous_gas_price = self.current_gas_price
+            self.current_gas_price = new_price
             self.last_check_time = datetime.now()
-            
-            # Обновляем статистику
             self.stats['checks_performed'] += 1
             
-            # Проверяем алерты
-            await self._check_alerts(gas_price)
+            logger.debug(f"Gas price updated: {new_price} Gwei")
             
-            logger.debug(f"Gas price: {gas_price} Gwei")
+            # Проверяем пересечения только если есть предыдущая цена
+            if self.previous_gas_price is not None:
+                await self._check_crossings()
             
         except Exception as e:
             logger.error(f"Error checking gas price: {e}")
             self.stats['api_errors'] += 1
-            raise
     
-    async def _fetch_gas_price(self) -> Optional[float]:
-        """Получение цены газа с Etherscan API"""
-        try:
-            async with aiohttp.ClientSession() as session:
-                params = {
-                    'module': 'gastracker',
-                    'action': 'gasoracle',
-                    'apikey': config.ETHERSCAN_API_KEY
-                }
-                
-                async with session.get(
-                    config.ETHERSCAN_API_URL,
-                    params=params,
-                    timeout=10
-                ) as response:
-                    if response.status != 200:
-                        logger.error(f"Etherscan API error: {response.status}")
-                        return None
-                    
-                    data = await response.json()
-                    
-                    if data.get('status') != '1':
-                        logger.error(f"Etherscan API error: {data.get('message')}")
-                        return None
-                    
-                    # Берем SafeGasPrice
-                    result = data.get('result', {})
-                    gas_price = float(result.get('SafeGasPrice', 0))
-                    
-                    return gas_price
-                    
-        except Exception as e:
-            logger.error(f"Error fetching gas price: {e}")
-            return None
-    
-    async def _check_alerts(self, current_price: float):
-        """Проверка и отправка алертов"""
-        # Получаем пользователей с порогом >= текущей цены
-        users_to_alert = await cache.get_gas_alerts_below(current_price)
-        
-        if not users_to_alert:
+    async def _check_crossings(self):
+        """Проверка пересечений установленных порогов"""
+        if self.current_gas_price is None or self.previous_gas_price is None:
             return
         
-        # Фильтруем пользователей по cooldown
-        now = datetime.now()
-        alerts_to_send = []
+        # Получаем активные алерты
+        gas_alerts = await cache.get_all_gas_alerts()
         
-        for user_id, threshold in users_to_alert:
-            # Проверяем cooldown
-            last_notified = self.notified_users.get(user_id)
-            if last_notified and (now - last_notified).seconds < self.notification_cooldown:
-                continue
-            
-            # Формируем алерт
-            alert_text = (
-                f"⛽ <b>Газ алерт!</b>\n\n"
-                f"Цена газа опустилась ниже вашего порога:\n"
-                f"📍 Текущая цена: {current_price} Gwei\n"
-                f"🎯 Ваш порог: {threshold} Gwei\n\n"
-                f"Самое время для транзакций!"
+        if not gas_alerts:
+            return
+        
+        alerts_to_send = []
+        alerts_to_remove = []
+        
+        for user_id, threshold in gas_alerts:
+            # Проверяем пересечение: цена "перешагнула" через порог
+            crossed = self._price_crossed_threshold(
+                self.previous_gas_price,
+                self.current_gas_price,
+                threshold
             )
             
-            alerts_to_send.append((user_id, alert_text))
-            self.notified_users[user_id] = now
+            if crossed:
+                logger.info(f"Gas price crossed threshold for user {user_id}: {threshold} Gwei")
+                
+                # Определяем направление
+                direction = "📈" if self.current_gas_price > threshold else "📉"
+                
+                alert_text = (
+                    f"{direction} <b>Газ алерт!</b>\n\n"
+                    f"Цена газа пересекла ваш порог:\n"
+                    f"🎯 Порог: {threshold} Gwei\n"
+                    f"📍 Текущая цена: {self.current_gas_price} Gwei\n"
+                    f"📊 Изменение: {self.previous_gas_price} → {self.current_gas_price} Gwei"
+                )
+                
+                alerts_to_send.append((user_id, alert_text))
+                alerts_to_remove.append(user_id)
+                
+                self.stats['crossings_detected'] += 1
         
         # Отправляем алерты
         if alerts_to_send:
@@ -190,35 +152,39 @@ class GasAlertService:
                 )
             
             self.stats['alerts_sent'] += len(alerts_to_send)
-            logger.info(f"Sent {len(alerts_to_send)} gas alerts")
+            logger.info(f"Sent {len(alerts_to_send)} gas crossing alerts")
+        
+        # Удаляем сработавшие алерты
+        for user_id in alerts_to_remove:
+            await cache.remove_gas_alert(user_id)
+            logger.info(f"Removed triggered gas alert for user {user_id}")
     
-    def get_gas_history(self, hours: int = 24) -> List[Dict[str, Any]]:
-        """Получение истории цен газа"""
-        if not self.gas_history:
-            return []
+    def _price_crossed_threshold(self, prev_price: float, curr_price: float, threshold: float) -> bool:
+        """Проверка пересечения порога ценой"""
+        # Цена пересекла порог если:
+        # 1. Была ниже порога, стала выше: prev < threshold <= curr
+        # 2. Была выше порога, стала ниже: prev > threshold >= curr
         
-        # Фильтруем по времени
-        cutoff = datetime.now() - timedelta(hours=hours)
-        filtered = [
-            item for item in self.gas_history
-            if item['timestamp'] > cutoff
-        ]
+        crossed_up = prev_price < threshold <= curr_price
+        crossed_down = prev_price > threshold >= curr_price
         
-        return filtered
+        return crossed_up or crossed_down
     
     def get_current_gas_price(self) -> Optional[float]:
-        """Получение текущей цены газа"""
-        return self.last_gas_price
+        """Получение текущей цены газа из памяти"""
+        return self.current_gas_price
     
     def get_stats(self) -> Dict[str, Any]:
         """Получение статистики сервиса"""
+        etherscan_stats = etherscan_service.get_stats()
+        
         return {
             **self.stats,
             'running': self.running,
-            'last_gas_price': self.last_gas_price,
+            'current_gas_price': self.current_gas_price,
+            'previous_gas_price': self.previous_gas_price,
             'last_check_time': self.last_check_time.isoformat() if self.last_check_time else None,
-            'history_size': len(self.gas_history),
-            'active_alerts': len(cache.gas_alerts) if hasattr(cache, 'gas_alerts') else 0
+            'etherscan_stats': etherscan_stats
         }
     
     async def health_check(self) -> Dict[str, Any]:
@@ -226,37 +192,38 @@ class GasAlertService:
         is_healthy = True
         issues = []
         
-        # Проверяем, что сервис запущен
+        # Проверяем что сервис запущен
         if not self.running:
             is_healthy = False
             issues.append("Service not running")
         
         # Проверяем давность последней проверки
         if self.last_check_time:
-            age = (datetime.now() - self.last_check_time).seconds
+            age = (datetime.now() - self.last_check_time).total_seconds()
             if age > config.GAS_CHECK_INTERVAL * 2:
                 is_healthy = False
-                issues.append(f"Last check too old: {age}s ago")
+                issues.append(f"Last check too old: {age:.0f}s ago")
         else:
             is_healthy = False
             issues.append("No checks performed yet")
         
-        # Проверяем количество ошибок
-        error_rate = self.stats['api_errors'] / max(self.stats['checks_performed'], 1)
-        if error_rate > 0.5:
+        # Проверяем наличие текущей цены
+        if self.current_gas_price is None:
             is_healthy = False
-            issues.append(f"High error rate: {error_rate:.2%}")
+            issues.append("No current gas price available")
+        
+        # Проверяем процент ошибок API
+        if self.stats['checks_performed'] > 0:
+            error_rate = self.stats['api_errors'] / self.stats['checks_performed']
+            if error_rate > config.MAX_ERROR_RATE:
+                is_healthy = False
+                issues.append(f"High API error rate: {error_rate:.2%}")
         
         return {
             'healthy': is_healthy,
             'issues': issues,
-            'last_check_age': (datetime.now() - self.last_check_time).seconds if self.last_check_time else None,
-            'error_rate': error_rate
+            'last_check_age': (datetime.now() - self.last_check_time).total_seconds() if self.last_check_time else None
         }
-    
-    def clear_notification_cooldown(self, user_id: int):
-        """Очистка cooldown для пользователя (для тестирования)"""
-        self.notified_users.pop(user_id, None)
 
 
 # Singleton instance

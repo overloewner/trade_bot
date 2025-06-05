@@ -21,7 +21,7 @@ logging.basicConfig(
     format=config.LOG_FORMAT,
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('crypto_bot.log', encoding='utf-8')
+        logging.FileHandler(config.LOG_FILE, encoding=config.LOG_FILE_ENCODING)
     ]
 )
 

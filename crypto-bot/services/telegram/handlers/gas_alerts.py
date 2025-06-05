@@ -76,9 +76,9 @@ async def process_manual_threshold(message: types.Message, state: FSMContext):
     try:
         threshold = float(message.text.strip().replace(',', '.'))
         
-        if threshold <= 0 or threshold > 1000:
+        if threshold < config.GAS_MIN_THRESHOLD or threshold > config.GAS_MAX_THRESHOLD:
             await message.answer(
-                "❌ Порог должен быть от 0.1 до 1000 Gwei",
+                f"❌ Порог должен быть от {config.GAS_MIN_THRESHOLD} до {config.GAS_MAX_THRESHOLD} Gwei",
                 reply_markup=Keyboards.cancel_button("gas_alerts")
             )
             return

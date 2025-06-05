@@ -50,7 +50,7 @@ class MessageQueue:
         self._lock = asyncio.Lock()
         
         # Rate limiting: 30 сообщений в минуту
-        self._send_times = deque(maxlen=30)  # Храним время последних 30 отправок
+        self._send_times = deque(maxlen=config.QUEUE_MAX_MESSAGES_PER_MINUTE)  # Храним время последних 30 отправок
         
         # Планировщик отправки
         self._scheduler_task = None
@@ -118,11 +118,11 @@ class MessageQueue:
         now = datetime.now()
         
         # Удаляем отправки старше 1 минуты
-        while self._send_times and (now - self._send_times[0]) > timedelta(minutes=1):
+        while self._send_times and (now - self._send_times[0]) > timedelta(seconds=config.QUEUE_RATE_LIMIT_WINDOW):
             self._send_times.popleft()
         
         # Можем отправить если отправили меньше 30 сообщений за последнюю минуту
-        return len(self._send_times) < 30
+        return len(self._send_times) < config.QUEUE_MAX_MESSAGES_PER_MINUTE
     
     async def start_processing(self) -> None:
         """Запуск планировщика обработки"""
