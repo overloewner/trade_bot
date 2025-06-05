@@ -8,34 +8,11 @@ from aiogram.enums import ParseMode
 
 from config.settings import config
 from services.telegram.handlers import register_all_handlers
-from services.telegram.alert_types import AlertType, AlertRequest, CandleAlertData, GasCrossingAlertData
 from utils.queue import message_queue, Priority
 from cache.memory import cache
 from models.database import db_manager
 
 logger = logging.getLogger(__name__)
-
-
-class AlertFormatter:
-    """Форматировщик алертов"""
-    
-    @staticmethod
-    def format_candle_alert(data: CandleAlertData) -> str:
-        """Форматирование свечного алерта"""
-        direction_icon = "🟢" if data.direction == "up" else "🔴"
-        return f"{direction_icon} {data.symbol} {data.interval}: {abs(data.percent_change):.2f}% (${data.price})"
-    
-    @staticmethod
-    def format_gas_crossing_alert(data: GasCrossingAlertData) -> str:
-        """Форматирование алерта пересечения газа"""
-        direction_icon = "📈" if data.direction == "up" else "📉"
-        return (
-            f"{direction_icon} <b>Газ алерт!</b>\n\n"
-            f"Цена газа пересекла ваш порог:\n"
-            f"🎯 Порог: {data.threshold} Gwei\n"
-            f"📍 Текущая цена: {data.current_price} Gwei\n"
-            f"📊 Изменение: {data.previous_price} → {data.current_price} Gwei"
-        )
 
 
 class TelegramBot:
@@ -58,9 +35,6 @@ class TelegramBot:
         
         # Регистрируем обработчики
         register_all_handlers(self.dp)
-        
-        # Форматировщик алертов
-        self.formatter = AlertFormatter()
         
         self.running = False
     
@@ -131,49 +105,7 @@ class TelegramBot:
         
         await self.bot.set_my_commands(commands)
     
-    # === МЕТОДЫ ДЛЯ ОТПРАВКИ АЛЕРТОВ ===
-    
-    async def send_alerts_bulk(self, alerts: List[AlertRequest]) -> None:
-        """Массовая отправка алертов"""
-        logger.info(f"Processing {len(alerts)} alerts for sending")
-        
-        # Группируем алерты по пользователям и типам
-        user_alerts: Dict[int, List[str]] = {}
-        
-        for alert in alerts:
-            user_id = alert.user_id
-            
-            # Форматируем алерт в зависимости от типа
-            if alert.alert_type == AlertType.CANDLE:
-                formatted_text = self.formatter.format_candle_alert(alert.data)
-            elif alert.alert_type == AlertType.GAS_CROSSING:
-                formatted_text = self.formatter.format_gas_crossing_alert(alert.data)
-            else:
-                logger.error(f"Unknown alert type: {alert.alert_type}")
-                continue
-            
-            # Добавляем к пользователю
-            if user_id not in user_alerts:
-                user_alerts[user_id] = []
-            user_alerts[user_id].append(formatted_text)
-        
-        # Отправляем через очередь
-        for user_id, alert_texts in user_alerts.items():
-            # Преобразуем приоритет
-            priority = self._convert_priority(alerts[0].priority)
-            
-            # Отправляем через очередь
-            await message_queue.add_formatted_alerts(user_id, alert_texts, priority)
-    
-    async def send_gas_alert(self, user_id: int, data: GasCrossingAlertData) -> None:
-        """Отправка газового алерта"""
-        alert = AlertRequest(
-            user_id=user_id,
-            alert_type=AlertType.GAS_CROSSING,
-            data=data,
-            priority="high"
-        )
-        await self.send_alerts_bulk([alert])
+    # === УПРОЩЕННЫЕ МЕТОДЫ ДЛЯ ОТПРАВКИ ===
     
     async def send_message(self, user_id: int, text: str, priority: str = "normal", **kwargs) -> None:
         """Отправка обычного сообщения"""

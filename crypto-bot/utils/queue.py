@@ -1,6 +1,6 @@
 import asyncio
 from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from collections import defaultdict, deque
 import logging
@@ -35,7 +35,7 @@ class Message:
 
 
 class MessageQueue:
-    """Очередь сообщений с планировщиком отправки каждую секунду"""
+    """Универсальная автономная очередь сообщений"""
     
     def __init__(self, bot_instance=None):
         self.bot = bot_instance
@@ -50,7 +50,7 @@ class MessageQueue:
         self._lock = asyncio.Lock()
         
         # Rate limiting: 30 сообщений в минуту
-        self._send_times = deque(maxlen=config.QUEUE_MAX_MESSAGES_PER_MINUTE)  # Храним время последних 30 отправок
+        self._send_times = deque(maxlen=config.QUEUE_MAX_MESSAGES_PER_MINUTE)
         
         # Планировщик отправки
         self._scheduler_task = None
@@ -85,19 +85,16 @@ class MessageQueue:
             
         logger.info(f"Added regular message for user {user_id}")
     
-    async def add_alerts_bulk(self, alerts: List[Tuple[int, Dict[str, Any]]],
-                             priority: Priority = Priority.NORMAL) -> None:
-        """Массовое добавление алертов"""
-        logger.info(f"Adding {len(alerts)} alerts to queue")
+    async def add_alerts_bulk(self, alerts: List[Tuple[int, str]]) -> None:
+        """Массовое добавление готовых алертов"""
+        logger.info(f"Adding {len(alerts)} pre-formatted alerts to queue")
         
         users_to_send_immediately = []
         
         async with self._lock:
             # Группируем по пользователям
             user_alerts = defaultdict(list)
-            for user_id, alert_data in alerts:
-                # Форматируем алерт в строку
-                alert_text = self._format_single_alert(alert_data)
+            for user_id, alert_text in alerts:
                 user_alerts[user_id].append(alert_text)
             
             # Добавляем в батчи и проверяем лимиты
@@ -112,16 +109,19 @@ class MessageQueue:
         # Отправляем немедленно пользователей с полными батчами
         for user_id in users_to_send_immediately:
             await self._send_user_alerts_immediately(user_id)
-
-    def _format_single_alert(self, alert_data: Dict[str, Any]) -> str:
-        """Форматирование одного алерта"""
-        direction = alert_data['direction']
-        symbol = alert_data['symbol']
-        interval = alert_data['interval']
-        percent_change = abs(alert_data['percent_change'])
-        price = alert_data['price']
+    
+    async def add_formatted_alerts(self, user_id: int, alert_texts: List[str], 
+                                  priority: Priority = Priority.HIGH) -> None:
+        """Добавление уже отформатированных алертов для одного пользователя"""
+        logger.info(f"Adding {len(alert_texts)} formatted alerts for user {user_id}")
         
-        return f"{direction} {symbol} {interval}: {percent_change:.2f}% (${price})"
+        async with self._lock:
+            self.alert_batches[user_id].extend(alert_texts)
+            logger.debug(f"Total alerts for user {user_id}: {len(self.alert_batches[user_id])}")
+        
+        # Проверяем лимит для немедленной отправки
+        if len(self.alert_batches[user_id]) >= config.MAX_ALERTS_PER_MESSAGE:
+            await self._send_user_alerts_immediately(user_id)
     
     def _can_send_message(self) -> bool:
         """Проверка можем ли отправить сообщение (rate limit 30/минуту)"""
@@ -263,50 +263,6 @@ class MessageQueue:
                     async with self._lock:
                         self.message_queue.insert(0, message_to_send)
     
-    async def flush_all_alerts(self) -> None:
-        """Отправка всех накопленных алертов (при остановке)"""
-        logger.info("Flushing all remaining alerts...")
-        
-        while await self._has_pending_messages():
-            if self._can_send_message():
-                await self._send_next_message()
-                await asyncio.sleep(1.0)  # Соблюдаем интервал
-            else:
-                break  # Достигли лимита
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Получение статистики очереди"""
-        pending_alerts = sum(len(alerts) for alerts in self.alert_batches.values())
-        
-        return {
-            **self.stats,
-            'pending_messages': len(self.message_queue),
-            'pending_alerts': pending_alerts,
-            'users_with_alerts': len(self.alert_batches),
-            'rate_limit_remaining': 30 - len(self._send_times)
-        }
-    
-    async def get_user_queue_size(self, user_id: int) -> int:
-        """Получение размера очереди для пользователя"""
-        async with self._lock:
-            user_messages = len([m for m in self.message_queue if m.user_id == user_id])
-            user_alerts = len(self.alert_batches.get(user_id, []))
-            return user_messages + user_alerts
-    
-    async def add_formatted_alerts(self, user_id: int, alert_texts: List[str], 
-                                  priority: Priority = Priority.HIGH) -> None:
-        """Добавление уже отформатированных алертов"""
-        logger.info(f"Adding {len(alert_texts)} formatted alerts for user {user_id}")
-        
-        async with self._lock:
-            # Добавляем алерты
-            self.alert_batches[user_id].extend(alert_texts)
-            logger.debug(f"Total alerts for user {user_id}: {len(self.alert_batches[user_id])}")
-        
-        # Проверяем лимит для немедленной отправки (без блокировки)
-        if len(self.alert_batches[user_id]) >= config.MAX_ALERTS_PER_MESSAGE:
-            await self._send_user_alerts_immediately(user_id)
-    
     async def _send_user_alerts_immediately(self, user_id: int):
         """Немедленная отправка алертов пользователю при достижении лимита"""
         if not self.bot:
@@ -356,6 +312,36 @@ class MessageQueue:
                 if "bot was blocked" not in str(e).lower():
                     async with self._lock:
                         self.alert_batches[user_id] = alerts_to_send + self.alert_batches.get(user_id, [])
+    
+    async def flush_all_alerts(self) -> None:
+        """Отправка всех накопленных алертов (при остановке)"""
+        logger.info("Flushing all remaining alerts...")
+        
+        while await self._has_pending_messages():
+            if self._can_send_message():
+                await self._send_next_message()
+                await asyncio.sleep(1.0)  # Соблюдаем интервал
+            else:
+                break  # Достигли лимита
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Получение статистики очереди"""
+        pending_alerts = sum(len(alerts) for alerts in self.alert_batches.values())
+        
+        return {
+            **self.stats,
+            'pending_messages': len(self.message_queue),
+            'pending_alerts': pending_alerts,
+            'users_with_alerts': len(self.alert_batches),
+            'rate_limit_remaining': 30 - len(self._send_times)
+        }
+    
+    async def get_user_queue_size(self, user_id: int) -> int:
+        """Получение размера очереди для пользователя"""
+        async with self._lock:
+            user_messages = len([m for m in self.message_queue if m.user_id == user_id])
+            user_alerts = len(self.alert_batches.get(user_id, []))
+            return user_messages + user_alerts
 
 
 # Глобальный инстанс

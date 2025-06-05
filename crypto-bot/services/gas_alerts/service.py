@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Optional, Dict, Any, Set
+from typing import Optional, Dict, Any, Set, List, Tuple
 from datetime import datetime
 from collections import defaultdict
 
@@ -153,7 +153,7 @@ class GasAlertService:
         if min_price == max_price:
             return
         
-        alerts_to_send = []
+        alerts_to_send: List[Tuple[int, str]] = []
         users_to_remove = []
         
         # Проверяем только пороги в диапазоне изменения цены
@@ -163,35 +163,28 @@ class GasAlertService:
                 logger.info(f"Gas price crossed threshold {threshold} Gwei: {self.previous_gas_price} → {self.current_gas_price}")
                 
                 # Определяем направление
-                direction = "up" if self.current_gas_price > threshold else "down"
+                direction = "📈" if self.current_gas_price > threshold else "📉"
                 
                 # Создаем алерты для всех пользователей с этим порогом
                 for user_id in user_ids.copy():  # copy() чтобы избежать изменения во время итерации
-                    from services.telegram.alert_types import AlertRequest, AlertType, GasCrossingAlertData
-                    
-                    alert_data = GasCrossingAlertData(
-                        threshold=threshold,
-                        current_price=self.current_gas_price,
-                        previous_price=self.previous_gas_price,
-                        direction=direction
+                    # ФОРМАТИРУЕМ алерт здесь
+                    alert_text = (
+                        f"{direction} <b>Газ алерт!</b>\n\n"
+                        f"Цена газа пересекла ваш порог:\n"
+                        f"🎯 Порог: {threshold} Gwei\n"
+                        f"📍 Текущая цена: {self.current_gas_price} Gwei\n"
+                        f"📊 Изменение: {self.previous_gas_price} → {self.current_gas_price} Gwei"
                     )
                     
-                    alert = AlertRequest(
-                        user_id=user_id,
-                        alert_type=AlertType.GAS_CROSSING,
-                        data=alert_data,
-                        priority="high"
-                    )
-                    
-                    alerts_to_send.append(alert)
+                    alerts_to_send.append((user_id, alert_text))
                     users_to_remove.append(user_id)
                     
                     self.stats['crossings_detected'] += 1
         
-        # Отправляем алерты через Telegram сервис
+        # Отправляем алерты через очередь
         if alerts_to_send:
-            from services.telegram.bot import telegram_bot
-            await telegram_bot.send_alerts_bulk(alerts_to_send)
+            from utils.queue import message_queue
+            await message_queue.add_alerts_bulk(alerts_to_send)
             
             self.stats['alerts_sent'] += len(alerts_to_send)
             logger.info(f"Sent {len(alerts_to_send)} gas crossing alerts")
