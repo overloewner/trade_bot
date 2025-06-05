@@ -90,6 +90,8 @@ class MessageQueue:
         """Массовое добавление алертов"""
         logger.info(f"Adding {len(alerts)} alerts to queue")
         
+        users_to_send_immediately = []
+        
         async with self._lock:
             # Группируем по пользователям
             user_alerts = defaultdict(list)
@@ -98,11 +100,19 @@ class MessageQueue:
                 alert_text = self._format_single_alert(alert_data)
                 user_alerts[user_id].append(alert_text)
             
-            # Добавляем в батчи
+            # Добавляем в батчи и проверяем лимиты
             for user_id, alert_texts in user_alerts.items():
                 self.alert_batches[user_id].extend(alert_texts)
                 logger.debug(f"Added {len(alert_texts)} alerts for user {user_id}, total: {len(self.alert_batches[user_id])}")
-    
+                
+                # Если достигли лимита - помечаем для немедленной отправки
+                if len(self.alert_batches[user_id]) >= config.MAX_ALERTS_PER_MESSAGE:
+                    users_to_send_immediately.append(user_id)
+        
+        # Отправляем немедленно пользователей с полными батчами
+        for user_id in users_to_send_immediately:
+            await self._send_user_alerts_immediately(user_id)
+
     def _format_single_alert(self, alert_data: Dict[str, Any]) -> str:
         """Форматирование одного алерта"""
         direction = alert_data['direction']
@@ -282,6 +292,70 @@ class MessageQueue:
             user_messages = len([m for m in self.message_queue if m.user_id == user_id])
             user_alerts = len(self.alert_batches.get(user_id, []))
             return user_messages + user_alerts
+    
+    async def add_formatted_alerts(self, user_id: int, alert_texts: List[str], 
+                                  priority: Priority = Priority.HIGH) -> None:
+        """Добавление уже отформатированных алертов"""
+        logger.info(f"Adding {len(alert_texts)} formatted alerts for user {user_id}")
+        
+        async with self._lock:
+            # Добавляем алерты
+            self.alert_batches[user_id].extend(alert_texts)
+            logger.debug(f"Total alerts for user {user_id}: {len(self.alert_batches[user_id])}")
+        
+        # Проверяем лимит для немедленной отправки (без блокировки)
+        if len(self.alert_batches[user_id]) >= config.MAX_ALERTS_PER_MESSAGE:
+            await self._send_user_alerts_immediately(user_id)
+    
+    async def _send_user_alerts_immediately(self, user_id: int):
+        """Немедленная отправка алертов пользователю при достижении лимита"""
+        if not self.bot:
+            return
+        
+        # Проверяем rate limit
+        if not self._can_send_message():
+            logger.debug(f"Rate limited - cannot send immediate alerts to user {user_id}")
+            return
+        
+        async with self._lock:
+            user_alerts = self.alert_batches.get(user_id, [])
+            if len(user_alerts) >= config.MAX_ALERTS_PER_MESSAGE:
+                # Берем полный батч
+                alerts_to_send = user_alerts[:config.MAX_ALERTS_PER_MESSAGE]
+                self.alert_batches[user_id] = user_alerts[config.MAX_ALERTS_PER_MESSAGE:]
+                
+                # Если алертов больше нет, удаляем пользователя
+                if not self.alert_batches[user_id]:
+                    del self.alert_batches[user_id]
+                
+                # Формируем сообщение
+                content = "🚨 <b>Алерты:</b>\n" + "\n".join(alerts_to_send)
+        
+        # Отправляем немедленно (вне блокировки)
+        if 'alerts_to_send' in locals():
+            try:
+                logger.info(f"Sending immediate full batch ({len(alerts_to_send)} alerts) to user {user_id}")
+                
+                await self.bot.send_message(
+                    chat_id=user_id,
+                    text=content,
+                    parse_mode="HTML"
+                )
+                
+                # Записываем время отправки для rate limiting
+                self._send_times.append(datetime.now())
+                
+                self.stats['messages_sent'] += 1
+                logger.info(f"Immediate batch sent successfully to user {user_id}")
+                
+            except Exception as e:
+                logger.error(f"Error sending immediate batch to {user_id}: {e}")
+                self.stats['errors'] += 1
+                
+                # Возвращаем алерты обратно в очередь при ошибке
+                if "bot was blocked" not in str(e).lower():
+                    async with self._lock:
+                        self.alert_batches[user_id] = alerts_to_send + self.alert_batches.get(user_id, [])
 
 
 # Глобальный инстанс

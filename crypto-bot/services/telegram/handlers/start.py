@@ -212,21 +212,29 @@ async def show_gas_alerts_menu(message_or_callback):
     else:
         user_id = message_or_callback.from_user.id
     
-    # Получаем информацию о газ алерте
+    # Получаем информацию о газ пресете
     gas_alert = await db_manager.get_gas_alert(user_id)
-    has_alert = gas_alert is not None and gas_alert.get('is_active', False)
+    has_alert = gas_alert is not None
     threshold = gas_alert.get('threshold_gwei') if gas_alert else None
     
+    # Получаем текущую цену газа из сервиса (из памяти)
+    from services.gas_alerts.service import gas_alert_service
+    current_price = gas_alert_service.get_current_gas_price()
+    
     text = (
-        "Газ алерты\n\n"
+        "⛽ <b>Газ алерты</b>\n\n"
         "Получайте уведомления когда цена газа в Ethereum "
-        "опустится ниже заданного порога.\n\n"
+        "пересечет заданный порог.\n\n"
     )
     
+    # Добавляем текущую цену если доступна
+    if current_price is not None:
+        text += f"💰 Текущая цена: {current_price} Gwei\n\n"
+    
     if has_alert:
-        text += f"Алерты включены\nПорог: {threshold} Gwei"
+        text += f"✅ Пресет установлен\n🎯 Порог: {threshold} Gwei"
     else:
-        text += "Алерты выключены"
+        text += "❌ Пресет не установлен"
     
     if isinstance(message_or_callback, types.Message):
         await message_or_callback.answer(

@@ -102,7 +102,7 @@ class MemoryCache:
                     logger.info(f"Loaded active preset {preset.id} with {len(preset.pairs)} pairs and {len(preset.intervals)} intervals")
         
         # Загружаем газовые алерты
-        gas_alerts = await db_manager.get_all_active_gas_alerts()
+        gas_alerts = await db_manager.get_all_gas_alerts()
         async with self._lock('gas_alerts'):
             for alert in gas_alerts:
                 self.gas_alerts[alert['user_id']] = float(alert['threshold_gwei'])

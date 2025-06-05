@@ -44,12 +44,11 @@ class Preset(Base):
 
 
 class GasAlert(Base):
-    """Модель газовых алертов"""
+    """Модель газовых пресетов"""
     __tablename__ = 'gas_alerts'
     
     user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'), primary_key=True)
     threshold_gwei = Column(DECIMAL(10, 2), nullable=False)
-    is_active = Column(Boolean, default=True)
     
     # Relationships
     user = relationship("User", back_populates="gas_alert")
@@ -104,8 +103,7 @@ max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
             await conn.execute('''
                 CREATE TABLE IF NOT EXISTS gas_alerts (
                     user_id BIGINT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
-                    threshold_gwei DECIMAL(10,2) NOT NULL,
-                    is_active BOOLEAN DEFAULT true
+                    threshold_gwei DECIMAL(10,2) NOT NULL
                 )
             ''')
             
@@ -113,11 +111,6 @@ max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
             await conn.execute('''
                 CREATE INDEX IF NOT EXISTS idx_presets_user_active 
                 ON presets(user_id, is_active)
-            ''')
-            
-            await conn.execute('''
-                CREATE INDEX IF NOT EXISTS idx_gas_alerts_active 
-                ON gas_alerts(is_active)
             ''')
     
     # User operations
@@ -216,14 +209,14 @@ max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
     
     # Gas alert operations
     async def set_gas_alert(self, user_id: int, threshold_gwei: float) -> bool:
-        """Установка газового алерта"""
+        """Установка газового пресета (создание или замена)"""
         async with self.pool.acquire() as conn:
             try:
                 await conn.execute(
                     '''INSERT INTO gas_alerts (user_id, threshold_gwei) 
                        VALUES ($1, $2) 
                        ON CONFLICT (user_id) DO UPDATE 
-                       SET threshold_gwei = $2, is_active = true''',
+                       SET threshold_gwei = $2''',
                     user_id, threshold_gwei
                 )
                 return True
@@ -232,7 +225,7 @@ max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
                 return False
     
     async def get_gas_alert(self, user_id: int) -> Optional[dict]:
-        """Получение газового алерта пользователя"""
+        """Получение газового пресета пользователя"""
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
                 'SELECT * FROM gas_alerts WHERE user_id = $1',
@@ -240,27 +233,27 @@ max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
             )
             return dict(row) if row else None
     
-    async def disable_gas_alert(self, user_id: int) -> bool:
-        """Отключение газового алерта"""
+    async def delete_gas_alert(self, user_id: int) -> bool:
+        """ПОЛНОЕ удаление газового пресета"""
         async with self.pool.acquire() as conn:
             try:
                 await conn.execute(
-                    'UPDATE gas_alerts SET is_active = false WHERE user_id = $1',
+                    'DELETE FROM gas_alerts WHERE user_id = $1',
                     user_id
                 )
                 return True
             except Exception as e:
-                print(f"Error disabling gas alert: {e}")
+                print(f"Error deleting gas alert: {e}")
                 return False
     
-    async def get_all_active_gas_alerts(self) -> List[dict]:
-        """Получение всех активных газовых алертов"""
+    async def get_all_gas_alerts(self) -> List[dict]:
+        """Получение ВСЕХ газовых пресетов (все по определению активны)"""
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
                 '''SELECT g.*, u.user_id 
                    FROM gas_alerts g 
                    JOIN users u ON g.user_id = u.user_id 
-                   WHERE g.is_active = true AND u.is_active = true'''
+                   WHERE u.is_active = true'''
             )
             return [dict(row) for row in rows]
 

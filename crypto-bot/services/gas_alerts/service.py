@@ -1,29 +1,30 @@
 import asyncio
 import logging
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, Set
 from datetime import datetime
+from collections import defaultdict
 
 from services.etherscan.service import etherscan_service
 from cache.memory import cache
-from utils.queue import message_queue, Priority
 from config.settings import config
 
 logger = logging.getLogger(__name__)
 
 
 class GasAlertService:
-    """Сервис мониторинга цены газа с триггерами пересечения"""
+    """Сервис мониторинга цены газа с оптимизированными пресетами"""
     
     def __init__(self):
         self.running = False
         self.monitor_task = None
         
-        # Текущая цена газа
+        # Текущая и предыдущая цена газа
         self.current_gas_price: Optional[float] = None
+        self.previous_gas_price: Optional[float] = None
         self.last_check_time: Optional[datetime] = None
         
-        # Предыдущая цена для отслеживания пересечений
-        self.previous_gas_price: Optional[float] = None
+        # Оптимизированная структура пресетов: threshold -> set(user_ids)
+        self.presets_by_threshold: Dict[float, Set[int]] = defaultdict(set)
         
         # Статистика
         self.stats = {
@@ -42,6 +43,9 @@ class GasAlertService:
         
         # Инициализируем Etherscan сервис
         await etherscan_service.initialize()
+        
+        # Загружаем пресеты из кеша
+        await self._load_presets_from_cache()
         
         self.running = True
         self.monitor_task = asyncio.create_task(self._monitor_loop())
@@ -63,6 +67,38 @@ class GasAlertService:
         
         await etherscan_service.close()
         logger.info("Gas Alert Service stopped")
+    
+    async def _load_presets_from_cache(self):
+        """Загрузка пресетов из кеша в оптимизированную структуру"""
+        gas_alerts = await cache.get_all_gas_alerts()
+        
+        for user_id, threshold in gas_alerts:
+            self.presets_by_threshold[threshold].add(user_id)
+        
+        logger.info(f"Loaded {len(gas_alerts)} gas presets grouped by {len(self.presets_by_threshold)} thresholds")
+    
+    async def add_preset(self, user_id: int, threshold: float):
+        """Добавление пресета"""
+        # Удаляем старый пресет если есть
+        await self.remove_preset(user_id)
+        
+        # Добавляем новый
+        self.presets_by_threshold[threshold].add(user_id)
+        
+        logger.info(f"Added gas preset for user {user_id}: {threshold} Gwei")
+    
+    async def remove_preset(self, user_id: int):
+        """Удаление пресета пользователя"""
+        # Ищем пользователя во всех порогах
+        for threshold, users in list(self.presets_by_threshold.items()):
+            if user_id in users:
+                users.remove(user_id)
+                # Удаляем пустые пороги
+                if not users:
+                    del self.presets_by_threshold[threshold]
+                break
+        
+        logger.info(f"Removed gas preset for user {user_id}")
     
     async def _monitor_loop(self):
         """Основной цикл мониторинга"""
@@ -95,80 +131,82 @@ class GasAlertService:
             
             # Проверяем пересечения только если есть предыдущая цена
             if self.previous_gas_price is not None:
-                await self._check_crossings()
+                await self._check_crossings_optimized()
             
         except Exception as e:
             logger.error(f"Error checking gas price: {e}")
             self.stats['api_errors'] += 1
     
-    async def _check_crossings(self):
-        """Проверка пересечений установленных порогов"""
+    async def _check_crossings_optimized(self):
+        """Оптимизированная проверка пересечений O(k) где k - пороги в диапазоне"""
         if self.current_gas_price is None or self.previous_gas_price is None:
             return
         
-        # Получаем активные алерты
-        gas_alerts = await cache.get_all_gas_alerts()
+        if not self.presets_by_threshold:
+            return
         
-        if not gas_alerts:
+        # Определяем диапазон изменения цены
+        min_price = min(self.previous_gas_price, self.current_gas_price)
+        max_price = max(self.previous_gas_price, self.current_gas_price)
+        
+        # Если цена не изменилась, пересечений нет
+        if min_price == max_price:
             return
         
         alerts_to_send = []
-        alerts_to_remove = []
+        users_to_remove = []
         
-        for user_id, threshold in gas_alerts:
-            # Проверяем пересечение: цена "перешагнула" через порог
-            crossed = self._price_crossed_threshold(
-                self.previous_gas_price,
-                self.current_gas_price,
-                threshold
-            )
-            
-            if crossed:
-                logger.info(f"Gas price crossed threshold for user {user_id}: {threshold} Gwei")
+        # Проверяем только пороги в диапазоне изменения цены
+        for threshold, user_ids in self.presets_by_threshold.items():
+            # Порог пересечен если он находится между старой и новой ценой
+            if min_price < threshold < max_price:
+                logger.info(f"Gas price crossed threshold {threshold} Gwei: {self.previous_gas_price} → {self.current_gas_price}")
                 
                 # Определяем направление
-                direction = "📈" if self.current_gas_price > threshold else "📉"
+                direction = "up" if self.current_gas_price > threshold else "down"
                 
-                alert_text = (
-                    f"{direction} <b>Газ алерт!</b>\n\n"
-                    f"Цена газа пересекла ваш порог:\n"
-                    f"🎯 Порог: {threshold} Gwei\n"
-                    f"📍 Текущая цена: {self.current_gas_price} Gwei\n"
-                    f"📊 Изменение: {self.previous_gas_price} → {self.current_gas_price} Gwei"
-                )
-                
-                alerts_to_send.append((user_id, alert_text))
-                alerts_to_remove.append(user_id)
-                
-                self.stats['crossings_detected'] += 1
+                # Создаем алерты для всех пользователей с этим порогом
+                for user_id in user_ids.copy():  # copy() чтобы избежать изменения во время итерации
+                    from services.telegram.alert_types import AlertRequest, AlertType, GasCrossingAlertData
+                    
+                    alert_data = GasCrossingAlertData(
+                        threshold=threshold,
+                        current_price=self.current_gas_price,
+                        previous_price=self.previous_gas_price,
+                        direction=direction
+                    )
+                    
+                    alert = AlertRequest(
+                        user_id=user_id,
+                        alert_type=AlertType.GAS_CROSSING,
+                        data=alert_data,
+                        priority="high"
+                    )
+                    
+                    alerts_to_send.append(alert)
+                    users_to_remove.append(user_id)
+                    
+                    self.stats['crossings_detected'] += 1
         
-        # Отправляем алерты
+        # Отправляем алерты через Telegram сервис
         if alerts_to_send:
-            for user_id, text in alerts_to_send:
-                await message_queue.add_message(
-                    user_id=user_id,
-                    content=text,
-                    priority=Priority.HIGH
-                )
+            from services.telegram.bot import telegram_bot
+            await telegram_bot.send_alerts_bulk(alerts_to_send)
             
             self.stats['alerts_sent'] += len(alerts_to_send)
             logger.info(f"Sent {len(alerts_to_send)} gas crossing alerts")
         
-        # Удаляем сработавшие алерты
-        for user_id in alerts_to_remove:
+        # Удаляем сработавшие пресеты ПОЛНОСТЬЮ из всех мест
+        for user_id in users_to_remove:
+            # Удаляем из БД
+            from models.database import db_manager
+            await db_manager.delete_gas_alert(user_id)
+            
+            # Удаляем из кеша
             await cache.remove_gas_alert(user_id)
-            logger.info(f"Removed triggered gas alert for user {user_id}")
-    
-    def _price_crossed_threshold(self, prev_price: float, curr_price: float, threshold: float) -> bool:
-        """Проверка пересечения порога ценой"""
-        # Цена пересекла порог если:
-        # 1. Была ниже порога, стала выше: prev < threshold <= curr
-        # 2. Была выше порога, стала ниже: prev > threshold >= curr
-        
-        crossed_up = prev_price < threshold <= curr_price
-        crossed_down = prev_price > threshold >= curr_price
-        
-        return crossed_up or crossed_down
+            
+            # Удаляем из сервиса
+            await self.remove_preset(user_id)
     
     def get_current_gas_price(self) -> Optional[float]:
         """Получение текущей цены газа из памяти"""
@@ -184,6 +222,8 @@ class GasAlertService:
             'current_gas_price': self.current_gas_price,
             'previous_gas_price': self.previous_gas_price,
             'last_check_time': self.last_check_time.isoformat() if self.last_check_time else None,
+            'total_presets': sum(len(users) for users in self.presets_by_threshold.values()),
+            'unique_thresholds': len(self.presets_by_threshold),
             'etherscan_stats': etherscan_stats
         }
     

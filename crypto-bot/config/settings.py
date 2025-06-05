@@ -122,7 +122,7 @@ class Config:
     PROCESSOR_ERROR_SLEEP: float = 1.0  # seconds задержка при ошибке
     
     # === PRECISION SETTINGS ===
-    DECIMAL_PRECISION: int = 8  # точность для Decimal вычислений
+    DECIMAL_PRECISION: int = 6  # точность для Decimal вычислений
     
     # === ADAPTIVE RATE LIMITER ===
     ADAPTIVE_LIMITER_ADJUSTMENT_INTERVAL: float = 60.0  # seconds

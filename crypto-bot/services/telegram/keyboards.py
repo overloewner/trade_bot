@@ -198,6 +198,14 @@ class Keyboards:
             for preset in config.PERCENT_PRESETS[3:]
         ]
         keyboard.append(second_row)
+        
+        # Кнопки управления
+        keyboard.append([
+            InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="percent_manual"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
+        ])
+        
+        return InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     @staticmethod
     def gas_alerts_menu(has_alert: bool, threshold: Optional[float] = None) -> InlineKeyboardMarkup:
@@ -256,6 +264,14 @@ class Keyboards:
             for preset in config.GAS_PRESETS[3:]
         ]
         keyboard.append(second_row)
+        
+        # Кнопки управления
+        keyboard.append([
+            InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="gas_manual"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="gas_alerts")
+        ])
+        
+        return InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     @staticmethod
     def back_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:

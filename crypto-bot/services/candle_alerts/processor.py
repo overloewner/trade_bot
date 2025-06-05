@@ -5,7 +5,6 @@ from typing import Dict, List, Any
 from datetime import datetime
 
 from cache.memory import cache, AlertRecord
-from utils.queue import message_queue, Priority
 from config.settings import config
 
 logger = logging.getLogger(__name__)
@@ -148,18 +147,28 @@ class CandleProcessor:
                 if abs(price_change) >= preset.percent_change:
                     logger.info(f"Alert triggered for user {user_id}: {symbol} {interval} {price_change}% >= {preset.percent_change}%")
                     
-                    # Формируем алерт
-                    direction = "🟢" if price_change > 0 else "🔴"
-                    alert = {
-                        'user_id': user_id,
-                        'symbol': symbol,
-                        'interval': interval,
-                        'percent_change': float(price_change),
-                        'price': candle['close'],
-                        'preset_name': preset.name,
-                        'direction': direction
-                    }
-                    alerts_to_send.append((user_id, alert))
+                    # Создаем алерт
+                    from services.telegram.alert_types import AlertRequest, AlertType, CandleAlertData
+                    
+                    direction = "up" if price_change > 0 else "down"
+                    
+                    alert_data = CandleAlertData(
+                        symbol=symbol,
+                        interval=interval,
+                        percent_change=float(price_change),
+                        price=candle['close'],
+                        preset_name=preset.name,
+                        direction=direction
+                    )
+                    
+                    alert = AlertRequest(
+                        user_id=user_id,
+                        alert_type=AlertType.CANDLE,
+                        data=alert_data,
+                        priority="high"
+                    )
+                    
+                    alerts_to_send.append(alert)
                     
                     # Записываем алерт в историю
                     await cache.record_alert(AlertRecord(
@@ -177,11 +186,13 @@ class CandleProcessor:
             if not alert_sent:
                 logger.debug(f"No alerts triggered for user {user_id}: {abs(price_change)}% below all thresholds")
         
-        # Отправляем алерты через message_queue
+        # Отправляем алерты через Telegram сервис
         if alerts_to_send:
+            from services.telegram.bot import telegram_bot
+            await telegram_bot.send_alerts_bulk(alerts_to_send)
+            
             self.stats['alerts_generated'] += len(alerts_to_send)
-            logger.info(f"Sending {len(alerts_to_send)} unique alerts for {symbol} {interval}")
-            await message_queue.add_alerts_bulk(alerts_to_send, Priority.HIGH)
+            logger.info(f"Sent {len(alerts_to_send)} unique alerts for {symbol} {interval}")
         else:
             logger.debug(f"No alerts to send for {symbol} {interval}")
     
