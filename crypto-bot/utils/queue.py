@@ -313,17 +313,6 @@ class MessageQueue:
                     async with self._lock:
                         self.alert_batches[user_id] = alerts_to_send + self.alert_batches.get(user_id, [])
     
-    async def flush_all_alerts(self) -> None:
-        """Отправка всех накопленных алертов (при остановке)"""
-        logger.info("Flushing all remaining alerts...")
-        
-        while await self._has_pending_messages():
-            if self._can_send_message():
-                await self._send_next_message()
-                await asyncio.sleep(1.0)  # Соблюдаем интервал
-            else:
-                break  # Достигли лимита
-    
     def get_stats(self) -> Dict[str, Any]:
         """Получение статистики очереди"""
         pending_alerts = sum(len(alerts) for alerts in self.alert_batches.values())
@@ -336,12 +325,6 @@ class MessageQueue:
             'rate_limit_remaining': 30 - len(self._send_times)
         }
     
-    async def get_user_queue_size(self, user_id: int) -> int:
-        """Получение размера очереди для пользователя"""
-        async with self._lock:
-            user_messages = len([m for m in self.message_queue if m.user_id == user_id])
-            user_alerts = len(self.alert_batches.get(user_id, []))
-            return user_messages + user_alerts
 
 
 # Глобальный инстанс

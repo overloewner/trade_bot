@@ -126,32 +126,6 @@ class TelegramBot:
             "urgent": Priority.URGENT
         }
         return priority_map.get(priority_str, Priority.NORMAL)
-    
-    # === МЕТОДЫ ДЛЯ ОБРАТНОЙ СОВМЕСТИМОСТИ ===
-    
-    async def send_alert(self, user_id: int, text: str, **kwargs):
-        """Отправка алерта пользователю (обратная совместимость)"""
-        await self.send_message(user_id, text, priority="high", **kwargs)
-    
-    async def broadcast_message(self, user_ids: list[int], text: str, **kwargs):
-        """Массовая рассылка сообщений"""
-        success_count = 0
-        fail_count = 0
-        
-        for user_id in user_ids:
-            try:
-                await self.send_message(user_id, text, **kwargs)
-                success_count += 1
-                
-                # Небольшая задержка чтобы не перегрузить очередь
-                await asyncio.sleep(0.01)
-                
-            except Exception as e:
-                logger.error(f"Error broadcasting to {user_id}: {e}")
-                fail_count += 1
-        
-        logger.info(f"Broadcast completed: {success_count} success, {fail_count} failed")
-        return success_count, fail_count
 
 
 # Singleton instance
