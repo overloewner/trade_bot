@@ -18,10 +18,9 @@ logger = logging.getLogger(__name__)
 class PresetStates(StatesGroup):
     """FSM состояния для создания пресета"""
     waiting_for_name = State()
-    selecting_pairs = State()
+    waiting_for_volume = State()
     waiting_for_manual_pairs = State()
-    selecting_intervals = State()
-    selecting_percent = State()
+    selecting_interval = State()
     waiting_for_manual_percent = State()
 
 
@@ -40,27 +39,42 @@ async def preset_create(callback: types.CallbackQuery, state: FSMContext):
     
     await callback.message.edit_text(
         "<b>🆕 Создание пресета</b>\n\n"
-        "Введите название для пресета (до 100 символов):",
+        "Введите название для пресета (до 30 символов):",
         reply_markup=Keyboards.cancel_button("candle_alerts"),
         parse_mode="HTML"
     )
     
     await state.set_state(PresetStates.waiting_for_name)
+async def callback_pairs_selection(callback: types.CallbackQuery):
+    """Возврат к меню выбора пар"""
+    await callback.message.edit_text(
+        "<b>📊 Выбор торговых пар</b>\n\n"
+        "Выберите способ добавления пар:",
+        reply_markup=Keyboards.pairs_selection_menu(),
+        parse_mode="HTML"
+    )
     await callback.answer()
+
+
+async def callback_preset_create_back(callback: types.CallbackQuery, state: FSMContext):
+    """Возврат к вводу имени пресета"""
+    await state.clear()
+    await preset_create(callback, state)
 
 
 async def process_preset_name(message: types.Message, state: FSMContext):
     """Обработка названия пресета"""
     name = message.text.strip()
     
-    if len(name) > config.PRESET_NAME_MAX_LENGTH:
+    # Валидация длины
+    if len(name) > 30:
         await message.answer(
-            f"❌ Название слишком длинное. Максимум {config.PRESET_NAME_MAX_LENGTH} символов.",
+            "❌ Название слишком длинное. Максимум 30 символов.",
             reply_markup=Keyboards.cancel_button("candle_alerts")
         )
         return
     
-    if not name:
+    if len(name) < 1:
         await message.answer(
             "❌ Название не может быть пустым.",
             reply_markup=Keyboards.cancel_button("candle_alerts")
@@ -74,115 +88,138 @@ async def process_preset_name(message: types.Message, state: FSMContext):
     await message.answer(
         "<b>📊 Выбор торговых пар</b>\n\n"
         "Выберите способ добавления пар:",
-        reply_markup=Keyboards.pairs_selection_method(),
+        reply_markup=Keyboards.pairs_selection_menu(),
+        parse_mode="HTML"
+    )
+
+
+async def callback_pairs_volume_menu(callback: types.CallbackQuery):
+    """Показ меню выбора по объему"""
+    await callback.message.edit_text(
+        "<b>💰 Выбор пар по объему</b>\n\n"
+        "Выберите вариант:",
+        reply_markup=Keyboards.pairs_volume_menu(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+async def callback_pairs_specific_menu(callback: types.CallbackQuery):
+    """Показ меню выбора конкретных пар"""
+    await callback.message.edit_text(
+        "<b>📝 Выбор конкретных пар</b>\n\n"
+        "Выберите вариант:",
+        reply_markup=Keyboards.pairs_specific_menu(),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+async def preset_pairs_volume(callback: types.CallbackQuery, state: FSMContext):
+    """Выбор по объему - ввод объема"""
+    await callback.message.edit_text(
+        "<b>💰 Ввод минимального объема</b>\n\n"
+        "Введите минимальный объем в USDT (например: 1000000):",
+        reply_markup=Keyboards.cancel_button("candle_alerts"),
         parse_mode="HTML"
     )
     
-    await state.set_state(PresetStates.selecting_pairs)
+    await state.set_state(PresetStates.waiting_for_volume)
+    await callback.answer()
+
+
+async def process_volume_input(message: types.Message, state: FSMContext):
+    """Обработка ввода объема"""
+    try:
+        volume = float(message.text.strip().replace(',', ''))
+        
+        if volume <= 0:
+            await message.answer(
+                "❌ Объем должен быть положительным числом.",
+                reply_markup=Keyboards.cancel_button("candle_alerts")
+            )
+            return
+        
+        # Получаем все пары и фильтруем по объему
+        # Здесь нужно будет добавить метод в binance API для получения пар с объемом
+        # Пока используем топ-100 как заглушку
+        pairs = symbols_cache.get_top_symbols(100)
+        
+        if not pairs:
+            await message.answer(
+                "❌ Символы не загружены. Попробуйте позже.",
+                reply_markup=Keyboards.back_button("candle_alerts")
+            )
+            return
+        
+        # Ограничиваем по лимиту
+        selected_pairs = pairs[:config.MAX_PAIRS_PER_PRESET]
+        await state.update_data(pairs=selected_pairs)
+        
+        # Показываем выбранные пары
+        await show_selected_pairs(message, selected_pairs)
+        
+        # Переходим к выбору интервала
+        await show_interval_selection(message, state)
+        
+    except ValueError:
+        await message.answer(
+            "❌ Введите корректное число",
+            reply_markup=Keyboards.cancel_button("candle_alerts")
+        )
+
+
+async def preset_pairs_top10(callback: types.CallbackQuery, state: FSMContext):
+    """Выбор топ 10 пар по объему"""
+    await callback.answer("Загружаю топ 10 пар...")
+    
+    pairs = symbols_cache.get_top_symbols(10)
+    
+    if not pairs:
+        await callback.message.edit_text(
+            "❌ Символы не загружены. Попробуйте позже.",
+            reply_markup=Keyboards.back_button("candle_alerts")
+        )
+        return
+    
+    await state.update_data(pairs=pairs)
+    
+    # Показываем выбранные пары
+    await callback.message.edit_text(
+        f"✅ Выбрано топ {len(pairs)} пар по объему:\n" +
+        ", ".join(pairs),
+        parse_mode="HTML"
+    )
+    
+    # Переходим к выбору интервала
+    await show_interval_selection(callback.message, state)
 
 
 async def preset_pairs_top100(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор топ 100 пар из кеша"""
+    """Выбор топ 100 пар по объему"""
     await callback.answer("Загружаю топ 100 пар...")
     
-    # Получаем пары из кеша памяти
     pairs = symbols_cache.get_top_symbols(100)
     
     if not pairs:
         await callback.message.edit_text(
-            "❌ Символы не загружены в кеш. Попробуйте позже.",
+            "❌ Символы не загружены. Попробуйте позже.",
             reply_markup=Keyboards.back_button("candle_alerts")
         )
         return
     
-    # Сохраняем пары (ограничиваем по лимиту)
-    selected_pairs = pairs[:config.MAX_PAIRS_PER_PRESET]
-    await state.update_data(pairs=selected_pairs)
+    await state.update_data(pairs=pairs[:config.MAX_PAIRS_PER_PRESET])
     
     # Показываем выбранные пары
     await callback.message.edit_text(
-        f"✅ Выбрано {len(selected_pairs)} пар из топ-100:\n" +
-        ", ".join(selected_pairs[:10]) +
-        (f"\n...и еще {len(selected_pairs) - 10}" if len(selected_pairs) > 10 else ""),
-        reply_markup=Keyboards.intervals_selection(),
+        f"✅ Выбрано {len(pairs)} пар из топ-100:\n" +
+        ", ".join(pairs[:10]) +
+        (f"\n...и еще {len(pairs) - 10}" if len(pairs) > 10 else ""),
         parse_mode="HTML"
     )
     
-    # Переходим к выбору интервалов
-    await state.set_state(PresetStates.selecting_intervals)
-    await state.update_data(selected_intervals=[])
-
-
-async def preset_pairs_volume(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор пар по объему из кеша"""
-    await callback.answer("Загружаю пары по объему...")
-    
-    # Получаем топ 50 пар из кеша (они уже отсортированы по объему)
-    pairs = symbols_cache.get_top_symbols(50)
-    
-    if not pairs:
-        await callback.message.edit_text(
-            "❌ Символы не загружены в кеш. Попробуйте позже.",
-            reply_markup=Keyboards.back_button("candle_alerts")
-        )
-        return
-    
-    # Сохраняем пары
-    selected_pairs = pairs[:config.MAX_PAIRS_PER_PRESET]
-    await state.update_data(pairs=selected_pairs)
-    
-    # Показываем выбранные пары
-    await callback.message.edit_text(
-        f"✅ Выбрано {len(selected_pairs)} пар по объему:\n" +
-        ", ".join(selected_pairs[:10]) +
-        (f"\n...и еще {len(selected_pairs) - 10}" if len(selected_pairs) > 10 else ""),
-        reply_markup=Keyboards.intervals_selection(),
-        parse_mode="HTML"
-    )
-    
-    # Переходим к выбору интервалов
-    await state.set_state(PresetStates.selecting_intervals)
-    await state.update_data(selected_intervals=[])
-
-
-async def preset_pairs_all(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор всех пар из кеша"""
-    await callback.answer("Загружаю все пары...")
-    
-    # Получаем все пары из кеша памяти
-    all_pairs = symbols_cache.get_all_symbols()
-    
-    if not all_pairs:
-        await callback.message.edit_text(
-            "❌ Символы не загружены в кеш. Попробуйте позже.",
-            reply_markup=Keyboards.back_button("candle_alerts")
-        )
-        return
-    
-    # Сохраняем все пары (ограничиваем по лимиту если нужно)
-    if len(all_pairs) > config.MAX_PAIRS_PER_PRESET:
-        selected_pairs = all_pairs[:config.MAX_PAIRS_PER_PRESET]
-        await callback.message.edit_text(
-            f"⚠️ Выбрано {config.MAX_PAIRS_PER_PRESET} пар из {len(all_pairs)} (лимит достигнут)\n\n"
-            f"Первые пары: {', '.join(selected_pairs[:10])}{'...' if len(selected_pairs) > 10 else ''}",
-            reply_markup=Keyboards.intervals_selection(),
-            parse_mode="HTML"
-        )
-    else:
-        selected_pairs = all_pairs
-        await callback.message.edit_text(
-            f"✅ Выбрано ВСЕ {len(selected_pairs)} пар:\n" +
-            ", ".join(selected_pairs[:10]) +
-            (f"\n...и еще {len(selected_pairs) - 10}" if len(selected_pairs) > 10 else ""),
-            reply_markup=Keyboards.intervals_selection(),
-            parse_mode="HTML"
-        )
-    
-    await state.update_data(pairs=selected_pairs)
-    
-    # Переходим к выбору интервалов
-    await state.set_state(PresetStates.selecting_intervals)
-    await state.update_data(selected_intervals=[])
+    # Переходим к выбору интервала
+    await show_interval_selection(callback.message, state)
 
 
 async def preset_pairs_manual(callback: types.CallbackQuery, state: FSMContext):
@@ -200,18 +237,70 @@ async def preset_pairs_manual(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
 
 
+async def preset_pairs_top5(callback: types.CallbackQuery, state: FSMContext):
+    """Выбор топ 5 пар"""
+    await callback.answer("Загружаю топ 5 пар...")
+    
+    pairs = symbols_cache.get_top_symbols(5)
+    
+    if not pairs:
+        await callback.message.edit_text(
+            "❌ Символы не загружены. Попробуйте позже.",
+            reply_markup=Keyboards.back_button("candle_alerts")
+        )
+        return
+    
+    await state.update_data(pairs=pairs)
+    
+    # Показываем выбранные пары
+    await callback.message.edit_text(
+        f"✅ Выбрано топ {len(pairs)} пар:\n" +
+        ", ".join(pairs),
+        parse_mode="HTML"
+    )
+    
+    # Переходим к выбору интервала
+    await show_interval_selection(callback.message, state)
+
+
 async def process_manual_pairs(message: types.Message, state: FSMContext):
     """Обработка ручного ввода пар"""
     text = message.text.upper().strip()
     
-    # Парсим пары
-    pairs = re.findall(r'[A-Z]+USDT', text)
-    pairs = list(set(pairs))  # Убираем дубликаты
+    # Парсим пары - ищем все что похоже на криптопары
+    # Поддерживаем разные разделители: запятая, пробел, точка с запятой
+    raw_pairs = re.split(r'[,\s;]+', text)
+    
+    # Фильтруем и валидируем
+    pairs = []
+    invalid_pairs = []
+    
+    for pair in raw_pairs:
+        pair = pair.strip()
+        if not pair:
+            continue
+            
+        # Проверяем формат - должен заканчиваться на USDT
+        if pair.endswith('USDT') and len(pair) > 4:
+            pairs.append(pair)
+        else:
+            invalid_pairs.append(pair)
+    
+    # Убираем дубликаты
+    pairs = list(set(pairs))
     
     if not pairs:
+        error_msg = "❌ Не найдено ни одной валидной пары.\n\n"
+        error_msg += "Пары должны заканчиваться на USDT.\n"
+        error_msg += "Пример: BTCUSDT, ETHUSDT\n\n"
+        
+        if invalid_pairs:
+            error_msg += f"Некорректные пары: {', '.join(invalid_pairs[:5])}"
+            if len(invalid_pairs) > 5:
+                error_msg += f" и еще {len(invalid_pairs) - 5}"
+        
         await message.answer(
-            "❌ Не найдено ни одной валидной пары.\n"
-            "Пары должны заканчиваться на USDT.",
+            error_msg,
             reply_markup=Keyboards.cancel_button("candle_alerts")
         )
         return
@@ -224,80 +313,61 @@ async def process_manual_pairs(message: types.Message, state: FSMContext):
     
     # Проверяем пары против кеша символов
     valid_pairs = symbols_cache.validate_symbols(pairs)
+    not_found_pairs = [p for p in pairs if p not in valid_pairs]
     
     if not valid_pairs:
         await message.answer(
-            "❌ Ни одна из введенных пар не найдена в списке поддерживаемых.",
+            "❌ Ни одна из введенных пар не найдена в списке поддерживаемых.\n\n" +
+            f"Проверьте правильность написания: {', '.join(pairs[:5])}",
             reply_markup=Keyboards.cancel_button("candle_alerts")
         )
         return
+    
+    # Если есть несуществующие пары, предупреждаем
+    if not_found_pairs:
+        warning_msg = f"⚠️ Некоторые пары не найдены и были исключены:\n"
+        warning_msg += ", ".join(not_found_pairs[:5])
+        if len(not_found_pairs) > 5:
+            warning_msg += f" и еще {len(not_found_pairs) - 5}"
+        await message.answer(warning_msg)
     
     # Сохраняем пары
     await state.update_data(pairs=valid_pairs)
     
     # Показываем выбранные пары
-    await message.answer(
-        f"✅ Выбрано {len(valid_pairs)} пар:\n" +
-        ", ".join(valid_pairs[:10]) +
-        (f"\n...и еще {len(valid_pairs) - 10}" if len(valid_pairs) > 10 else "")
-    )
+    await show_selected_pairs(message, valid_pairs)
     
-    # Переходим к выбору интервалов
-    await show_intervals_selection(message, state)
+    # Переходим к выбору интервала
+    await show_interval_selection(message, state)
 
 
-async def show_intervals_selection(message: types.Message, state: FSMContext):
-    """Показ выбора интервалов"""
+async def show_selected_pairs(message: types.Message, pairs: List[str]):
+    """Показ выбранных пар"""
     await message.answer(
-        "<b>⏱ Выбор интервалов</b>\n\n"
-        "Выберите интервалы для отслеживания:",
-        reply_markup=Keyboards.intervals_selection(),
+        f"✅ Выбрано {len(pairs)} пар:\n" +
+        ", ".join(pairs[:10]) +
+        (f"\n...и еще {len(pairs) - 10}" if len(pairs) > 10 else "")
+    )
+
+
+async def show_interval_selection(message: types.Message, state: FSMContext):
+    """Показ выбора интервала"""
+    await message.answer(
+        "<b>⏱ Выбор интервала</b>\n\n"
+        "Выберите интервал для отслеживания:",
+        reply_markup=Keyboards.interval_selection(),
         parse_mode="HTML"
     )
     
-    await state.set_state(PresetStates.selecting_intervals)
-    await state.update_data(selected_intervals=[])
+    await state.set_state(PresetStates.selecting_interval)
 
 
-async def interval_toggle(callback: types.CallbackQuery, state: FSMContext):
-    """Переключение интервала"""
-    interval = callback.data.split("_")[2]
-    data = await state.get_data()
-    selected = data.get('selected_intervals', [])
+async def interval_selected(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка выбора интервала"""
+    interval = callback.data.split("_")[1]
     
-    if interval in selected:
-        selected.remove(interval)
-        await callback.answer(f"❌ {interval} убран")
-    else:
-        selected.append(interval)
-        await callback.answer(f"✅ {interval} добавлен")
-    
-    await state.update_data(selected_intervals=selected)
-
-
-async def interval_all(callback: types.CallbackQuery, state: FSMContext):
-    """Выбор всех интервалов"""
-    await state.update_data(selected_intervals=config.SUPPORTED_INTERVALS.copy())
-    await callback.answer("✅ Все интервалы выбраны")
-
-
-async def interval_none(callback: types.CallbackQuery, state: FSMContext):
-    """Очистка выбора интервалов"""
-    await state.update_data(selected_intervals=[])
-    await callback.answer("❌ Выбор очищен")
-
-
-async def interval_done(callback: types.CallbackQuery, state: FSMContext):
-    """Завершение выбора интервалов"""
-    data = await state.get_data()
-    selected = data.get('selected_intervals', [])
-    
-    if not selected:
-        await callback.answer("❌ Выберите хотя бы один интервал", show_alert=True)
-        return
-    
-    # Сохраняем интервалы
-    await state.update_data(intervals=selected)
+    # Сохраняем интервал (только один)
+    await state.update_data(intervals=[interval])
     
     # Переходим к выбору процента
     await callback.message.edit_text(
@@ -307,13 +377,14 @@ async def interval_done(callback: types.CallbackQuery, state: FSMContext):
         parse_mode="HTML"
     )
     
-    await state.set_state(PresetStates.selecting_percent)
     await callback.answer()
 
 
 async def percent_preset(callback: types.CallbackQuery, state: FSMContext):
     """Выбор процента из пресетов"""
-    percent = float(callback.data.split("_")[1])
+    # Парсим процент из callback_data вида "percent_0.5"
+    percent_str = callback.data.replace("percent_", "")
+    percent = float(percent_str)
     
     # Сохраняем процент
     await state.update_data(percent_change=percent)
@@ -325,8 +396,8 @@ async def percent_preset(callback: types.CallbackQuery, state: FSMContext):
 async def percent_manual(callback: types.CallbackQuery, state: FSMContext):
     """Ручной ввод процента"""
     await callback.message.edit_text(
-        f"<b>✏️ Ввод процента</b>\n\n"
-        f"Введите процент изменения (от {config.MIN_PERCENT_CHANGE} до {config.MAX_PERCENT_CHANGE}):",
+        "<b>✏️ Ввод процента</b>\n\n"
+        "Введите процент изменения (от 0.1 до 100):",
         reply_markup=Keyboards.cancel_button("candle_alerts"),
         parse_mode="HTML"
     )
@@ -338,11 +409,14 @@ async def percent_manual(callback: types.CallbackQuery, state: FSMContext):
 async def process_manual_percent(message: types.Message, state: FSMContext):
     """Обработка ручного ввода процента"""
     try:
-        percent = float(message.text.strip().replace(',', '.').replace('%', ''))
+        # Убираем знак процента и заменяем запятую
+        percent_text = message.text.strip().replace(',', '.').replace('%', '')
+        percent = float(percent_text)
         
-        if percent < config.MIN_PERCENT_CHANGE or percent > config.MAX_PERCENT_CHANGE:
+        # Валидация диапазона
+        if percent < 0.1 or percent > 100:
             await message.answer(
-                f"❌ Процент должен быть от {config.MIN_PERCENT_CHANGE} до {config.MAX_PERCENT_CHANGE}",
+                "❌ Процент должен быть от 0.1 до 100",
                 reply_markup=Keyboards.cancel_button("candle_alerts")
             )
             return
@@ -355,7 +429,8 @@ async def process_manual_percent(message: types.Message, state: FSMContext):
         
     except ValueError:
         await message.answer(
-            "❌ Введите корректное число",
+            "❌ Введите корректное число\n"
+            "Пример: 1.5 или 1,5 или 1.5%",
             reply_markup=Keyboards.cancel_button("candle_alerts")
         )
 
@@ -372,13 +447,14 @@ async def create_preset_final(message_or_callback, state: FSMContext):
         reply_func = message_or_callback.message.answer
         await message_or_callback.answer()
     
-    # Создаем пресет в БД
+    # Создаем пресет в БД СРАЗУ АКТИВНЫМ  
     preset_id = await db_manager.create_preset(
         user_id=user_id,
         name=data['name'],
         pairs=data['pairs'],
         intervals=data['intervals'],
-        percent_change=data['percent_change']
+        percent_change=data['percent_change'],
+        is_active=True  # Сразу активный
     )
     
     if not preset_id:
@@ -389,7 +465,7 @@ async def create_preset_final(message_or_callback, state: FSMContext):
         await state.clear()
         return
     
-    # Добавляем в кеш
+    # Добавляем в кеш как активный
     preset = PresetData(
         id=preset_id,
         user_id=user_id,
@@ -397,7 +473,7 @@ async def create_preset_final(message_or_callback, state: FSMContext):
         pairs=data['pairs'],
         intervals=data['intervals'],
         percent_change=data['percent_change'],
-        is_active=False
+        is_active=True  # Активный
     )
     await cache.add_preset(preset)
     
@@ -406,14 +482,13 @@ async def create_preset_final(message_or_callback, state: FSMContext):
     
     # Показываем успех
     await reply_func(
-        f"✅ <b>Пресет создан!</b>\n\n"
+        f"✅ <b>Пресет создан и активирован!</b>\n\n"
         f"📌 Название: {data['name']}\n"
         f"💰 Пар: {len(data['pairs'])}\n"
-        f"⏱ Интервалов: {len(data['intervals'])}\n"
+        f"⏱ Интервал: {data['intervals'][0]}\n"
         f"📊 Порог: {data['percent_change']}%\n\n"
-        f"Пресет создан в <b>неактивном</b> состоянии.\n"
-        f"Активируйте его для получения уведомлений.",
-        reply_markup=Keyboards.preset_actions(preset_id, False),
+        f"Вы будете получать уведомления при изменении цены.",
+        reply_markup=Keyboards.preset_actions(preset_id, True),
         parse_mode="HTML"
     )
 
@@ -461,11 +536,14 @@ async def preset_view(callback: types.CallbackQuery):
     if len(preset['pairs']) > 5:
         pairs_preview += f" и еще {len(preset['pairs']) - 5}"
     
+    # Показываем только один интервал
+    interval = preset['intervals'][0] if preset['intervals'] else "Не задан"
+    
     text = (
         f"<b>📊 Пресет: {preset['name']}</b>\n\n"
         f"Статус: {status}\n"
         f"Пар: {len(preset['pairs'])}\n"
-        f"Интервалы: {', '.join(preset['intervals'])}\n"
+        f"Интервал: {interval}\n"
         f"Порог: {preset['percent_change']}%\n\n"
         f"<b>Пары:</b>\n{pairs_preview}"
     )
@@ -558,18 +636,25 @@ def register_candle_alerts_handlers(dp: Dispatcher):
     dp.callback_query.register(preset_create, F.data == "preset_create")
     dp.message.register(process_preset_name, PresetStates.waiting_for_name)
     
-    # Выбор пар
-    dp.callback_query.register(preset_pairs_top100, F.data == "pairs_top100")
+    # Навигация по меню
+    dp.callback_query.register(callback_pairs_volume_menu, F.data == "pairs_volume_menu")
+    dp.callback_query.register(callback_pairs_specific_menu, F.data == "pairs_specific_menu")
+    dp.callback_query.register(callback_pairs_selection, F.data == "pairs_selection")
+    dp.callback_query.register(callback_preset_create_back, F.data == "preset_create_back")
+    
+    # Выбор пар по объему
     dp.callback_query.register(preset_pairs_volume, F.data == "pairs_volume")
-    dp.callback_query.register(preset_pairs_all, F.data == "pairs_all")
+    dp.message.register(process_volume_input, PresetStates.waiting_for_volume)
+    dp.callback_query.register(preset_pairs_top10, F.data == "pairs_top10")
+    dp.callback_query.register(preset_pairs_top100, F.data == "pairs_top100")
+    
+    # Выбор конкретных пар
     dp.callback_query.register(preset_pairs_manual, F.data == "pairs_manual")
+    dp.callback_query.register(preset_pairs_top5, F.data == "pairs_top5")
     dp.message.register(process_manual_pairs, PresetStates.waiting_for_manual_pairs)
     
-    # Выбор интервалов
-    dp.callback_query.register(interval_toggle, F.data.startswith("interval_toggle_"))
-    dp.callback_query.register(interval_all, F.data == "interval_all")
-    dp.callback_query.register(interval_none, F.data == "interval_none")
-    dp.callback_query.register(interval_done, F.data == "interval_done")
+    # Выбор интервала
+    dp.callback_query.register(interval_selected, F.data.startswith("interval_") & ~F.data.contains("done") & ~F.data.contains("all") & ~F.data.contains("none"))
     
     # Выбор процента
     dp.callback_query.register(percent_preset, F.data.startswith("percent_") & ~F.data.contains("manual"))

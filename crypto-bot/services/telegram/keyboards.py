@@ -23,6 +23,31 @@ class Keyboards:
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     @staticmethod
+    def back_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
+        """Кнопка назад"""
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад", callback_data=callback_data)]
+        ])
+    
+    @staticmethod
+    def cancel_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
+        """Кнопка отмены"""
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Отмена", callback_data=callback_data)]
+        ])
+    
+    @staticmethod
+    def confirmation(action: str, data: str) -> InlineKeyboardMarkup:
+        """Универсальное подтверждение"""
+        keyboard = [
+            [
+                InlineKeyboardButton(text="✅ Да", callback_data=f"confirm_{action}_{data}"),
+                InlineKeyboardButton(text="❌ Нет", callback_data=f"cancel_{action}_{data}")
+            ]
+        ]
+        return InlineKeyboardMarkup(inline_keyboard=keyboard)
+    
+    @staticmethod
     def candle_alerts_menu() -> InlineKeyboardMarkup:
         """Меню свечных алертов"""
         keyboard = [
@@ -106,31 +131,19 @@ class Keyboards:
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     @staticmethod
-    def pairs_selection_method() -> InlineKeyboardMarkup:
-        """Выбор метода выбора пар"""
+    def pairs_selection_menu() -> InlineKeyboardMarkup:
+        """Меню выбора способа добавления пар"""
         keyboard = [
             [
                 InlineKeyboardButton(
-                    text="🏆 Топ 100 по объему", 
-                    callback_data="pairs_top100"
+                    text="💰 Выбор по объему", 
+                    callback_data="pairs_volume_menu"
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text="💰 Топ по объему 24ч", 
-                    callback_data="pairs_volume"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="🌟 Все пары", 
-                    callback_data="pairs_all"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="✏️ Ввести вручную", 
-                    callback_data="pairs_manual"
+                    text="📝 Выбор конкретных пар", 
+                    callback_data="pairs_specific_menu"
                 )
             ],
             [
@@ -140,8 +153,39 @@ class Keyboards:
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
     
     @staticmethod
-    def intervals_selection() -> InlineKeyboardMarkup:
-        """Выбор интервалов"""
+    def pairs_volume_menu() -> InlineKeyboardMarkup:
+        """Меню выбора пар по объему"""
+        keyboard = [
+            [
+                InlineKeyboardButton(text="✏️ Ввести объем", callback_data="pairs_volume"),
+                InlineKeyboardButton(text="🏆 Топ 10", callback_data="pairs_top10")
+            ],
+            [
+                InlineKeyboardButton(text="💎 Топ 100", callback_data="pairs_top100")
+            ],
+            [
+                InlineKeyboardButton(text="🔙 Назад", callback_data="preset_create_back")
+            ]
+        ]
+        return InlineKeyboardMarkup(inline_keyboard=keyboard)
+    
+    @staticmethod
+    def pairs_specific_menu() -> InlineKeyboardMarkup:
+        """Меню выбора конкретных пар"""
+        keyboard = [
+            [
+                InlineKeyboardButton(text="✏️ Ввести названия вручную", callback_data="pairs_manual"),
+                InlineKeyboardButton(text="⭐ Топ 5", callback_data="pairs_top5")
+            ],
+            [
+                InlineKeyboardButton(text="🔙 Назад", callback_data="preset_create_back")
+            ]
+        ]
+        return InlineKeyboardMarkup(inline_keyboard=keyboard)
+    
+    @staticmethod
+    def interval_selection() -> InlineKeyboardMarkup:
+        """Выбор интервала (один на выбор)"""
         keyboard = []
         
         # Интервалы в два ряда
@@ -151,24 +195,18 @@ class Keyboards:
         keyboard.append([
             InlineKeyboardButton(
                 text=interval, 
-                callback_data=f"interval_toggle_{interval}"
+                callback_data=f"interval_{interval}"
             ) for interval in intervals_row1
         ])
         
         keyboard.append([
             InlineKeyboardButton(
                 text=interval, 
-                callback_data=f"interval_toggle_{interval}"
+                callback_data=f"interval_{interval}"
             ) for interval in intervals_row2
         ])
         
         keyboard.append([
-            InlineKeyboardButton(text="✅ Все", callback_data="interval_all"),
-            InlineKeyboardButton(text="❌ Очистить", callback_data="interval_none")
-        ])
-        
-        keyboard.append([
-            InlineKeyboardButton(text="➡️ Далее", callback_data="interval_done"),
             InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
         ])
         
@@ -176,28 +214,34 @@ class Keyboards:
     
     @staticmethod
     def percent_presets() -> InlineKeyboardMarkup:
-        """Пресеты процентов"""
+        """Пресеты процентов (4 варианта)"""
         keyboard = []
         
-        # Первый ряд
-        first_row = [
-            InlineKeyboardButton(
-                text=f"{preset}%", 
-                callback_data=f"percent_{preset}"
-            ) 
-            for preset in config.PERCENT_PRESETS[:3]
-        ]
-        keyboard.append(first_row)
+        # Используем первые 4 процента из конфига
+        presets = config.PERCENT_PRESETS[:4]
         
-        # Второй ряд  
-        second_row = [
+        # Два ряда по 2 кнопки
+        keyboard.append([
             InlineKeyboardButton(
-                text=f"{preset}%", 
-                callback_data=f"percent_{preset}"
-            ) 
-            for preset in config.PERCENT_PRESETS[3:]
-        ]
-        keyboard.append(second_row)
+                text=f"{presets[0]}%", 
+                callback_data=f"percent_{presets[0]}"
+            ),
+            InlineKeyboardButton(
+                text=f"{presets[1]}%", 
+                callback_data=f"percent_{presets[1]}"
+            )
+        ])
+        
+        keyboard.append([
+            InlineKeyboardButton(
+                text=f"{presets[2]}%", 
+                callback_data=f"percent_{presets[2]}"
+            ),
+            InlineKeyboardButton(
+                text=f"{presets[3]}%", 
+                callback_data=f"percent_{presets[3]}"
+            )
+        ])
         
         # Кнопки управления
         keyboard.append([
@@ -205,95 +249,4 @@ class Keyboards:
             InlineKeyboardButton(text="❌ Отмена", callback_data="candle_alerts")
         ])
         
-        return InlineKeyboardMarkup(inline_keyboard=keyboard)
-    
-    @staticmethod
-    def gas_alerts_menu(has_alert: bool, threshold: Optional[float] = None) -> InlineKeyboardMarkup:
-        """Меню газовых алертов"""
-        keyboard = []
-        
-        if has_alert:
-            keyboard.append([
-                InlineKeyboardButton(
-                    text=f"⚙️ Изменить ({threshold} Gwei)", 
-                    callback_data="gas_set"
-                )
-            ])
-            keyboard.append([
-                InlineKeyboardButton(
-                    text="🔴 Отключить", 
-                    callback_data="gas_disable"
-                )
-            ])
-        else:
-            keyboard.append([
-                InlineKeyboardButton(
-                    text="🟢 Включить алерты", 
-                    callback_data="gas_set"
-                )
-            ])
-        
-        keyboard.append([
-            InlineKeyboardButton(text="📊 График газа", callback_data="gas_chart"),
-            InlineKeyboardButton(text="🔙 Главное меню", callback_data="main_menu")
-        ])
-        
-        return InlineKeyboardMarkup(inline_keyboard=keyboard)
-    
-    @staticmethod
-    def gas_threshold_presets() -> InlineKeyboardMarkup:
-        """Пресеты порогов газа"""
-        keyboard = []
-        
-        # Первый ряд
-        first_row = [
-            InlineKeyboardButton(
-                text=f"{preset} Gwei", 
-                callback_data=f"gas_{preset}"
-            ) 
-            for preset in config.GAS_PRESETS[:3]
-        ]
-        keyboard.append(first_row)
-        
-        # Второй ряд
-        second_row = [
-            InlineKeyboardButton(
-                text=f"{preset} Gwei", 
-                callback_data=f"gas_{preset}"
-            ) 
-            for preset in config.GAS_PRESETS[3:]
-        ]
-        keyboard.append(second_row)
-        
-        # Кнопки управления
-        keyboard.append([
-            InlineKeyboardButton(text="✏️ Ввести вручную", callback_data="gas_manual"),
-            InlineKeyboardButton(text="❌ Отмена", callback_data="gas_alerts")
-        ])
-        
-        return InlineKeyboardMarkup(inline_keyboard=keyboard)
-    
-    @staticmethod
-    def back_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
-        """Кнопка назад"""
-        return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔙 Назад", callback_data=callback_data)]
-        ])
-    
-    @staticmethod
-    def cancel_button(callback_data: str = "main_menu") -> InlineKeyboardMarkup:
-        """Кнопка отмены"""
-        return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="❌ Отмена", callback_data=callback_data)]
-        ])
-    
-    @staticmethod
-    def confirmation(action: str, data: str) -> InlineKeyboardMarkup:
-        """Универсальное подтверждение"""
-        keyboard = [
-            [
-                InlineKeyboardButton(text="✅ Да", callback_data=f"confirm_{action}_{data}"),
-                InlineKeyboardButton(text="❌ Нет", callback_data=f"cancel_{action}_{data}")
-            ]
-        ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)

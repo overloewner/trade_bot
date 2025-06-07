@@ -138,14 +138,14 @@ max_inactive_connection_lifetime=config.DB_CONNECTION_TIMEOUT,
     
     # Preset operations
     async def create_preset(self, user_id: int, name: str, pairs: List[str], 
-                          intervals: List[str], percent_change: float) -> Optional[int]:
+                          intervals: List[str], percent_change: float, is_active: bool = False) -> Optional[int]:
         """Создание нового пресета"""
         async with self.pool.acquire() as conn:
             try:
                 row = await conn.fetchrow(
-                    '''INSERT INTO presets (user_id, name, pairs, intervals, percent_change)
-                       VALUES ($1, $2, $3, $4, $5) RETURNING id''',
-                    user_id, name, pairs, intervals, percent_change
+                    '''INSERT INTO presets (user_id, name, pairs, intervals, percent_change, is_active)
+                       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id''',
+                    user_id, name, pairs, intervals, percent_change, is_active
                 )
                 return row['id']
             except Exception as e:

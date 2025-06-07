@@ -1,7 +1,6 @@
 import asyncio
 import logging
-from decimal import Decimal, getcontext
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 from datetime import datetime
 
 from cache.memory import cache, AlertRecord
@@ -11,16 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 class PriceAnalyzer:
-    def __init__(self):
-        getcontext().prec = config.DECIMAL_PRECISION
-        self._zero = Decimal(0)
+    def calculate_change(self, open_price: float, close_price: float) -> float:
+        """Расчет процента изменения с точностью до 4 знаков"""
+        if open_price == 0:
+            return 0.0
         
-    def calculate_change(self, open_price: float, close_price: float) -> Decimal:
-        open_dec = Decimal(str(open_price))
-        if open_dec == self._zero:
-            return self._zero
-        close_dec = Decimal(str(close_price))
-        return ((close_dec - open_dec) / open_dec) * 100
+        # Простой расчет с float
+        change = ((close_price - open_price) / open_price) * 100
+        
+        # Округляем до 4 знаков после запятой
+        return round(change, 4)
 
 
 class CandleProcessor:
@@ -34,6 +33,10 @@ class CandleProcessor:
         # Cooldown для дедупликации
         self._cooldown = {}
         self._cooldown_lock = asyncio.Lock()
+        
+        # Хранение последних данных по биткоину для корреляции
+        self.btc_data = {}  # interval -> {'price': float, 'change': float, 'timestamp': datetime}
+        self._btc_lock = asyncio.Lock()
         
         # Статистика
         self.stats = {
@@ -113,6 +116,22 @@ class CandleProcessor:
         
         logger.debug(f"Processing candle: {symbol} {interval}")
         
+        # Рассчитываем процент изменения
+        price_change = self.analyzer.calculate_change(
+            candle['open'],
+            candle['close']
+        )
+        
+        # Обновляем данные биткоина если это BTCUSDT
+        if symbol == 'BTCUSDT':
+            async with self._btc_lock:
+                self.btc_data[interval] = {
+                    'price': candle['close'],
+                    'change': price_change,
+                    'timestamp': datetime.now()
+                }
+            logger.debug(f"Updated BTC data for {interval}: {price_change:.3f}%")
+        
         # Получаем подписанных пользователей из кеша
         subscribed_users = await cache.get_subscribed_users(symbol, interval)
         
@@ -122,18 +141,15 @@ class CandleProcessor:
         
         logger.info(f"Found {len(subscribed_users)} subscribers for {symbol} {interval}")
         
-        # Рассчитываем процент изменения
-        price_change = self.analyzer.calculate_change(
-            candle['open'],
-            candle['close']
-        )
-        
         logger.debug(f"{symbol} {interval} price change: {price_change}%")
         
         # Проверяем дедупликацию
         if not await self._should_send_alert(symbol, interval, price_change):
             logger.debug(f"Alert deduplicated for {symbol} {interval} {price_change}%")
             return
+        
+        # Получаем корреляцию с биткоином
+        btc_correlation = await self._get_btc_correlation(symbol, interval, price_change)
         
         # Генерируем готовые алерты
         alerts_to_send = []
@@ -145,11 +161,15 @@ class CandleProcessor:
             for preset in presets:
                 # Проверяем порог
                 if abs(price_change) >= preset.percent_change:
-                    logger.info(f"Alert triggered for user {user_id}: {symbol} {interval} {price_change}% >= {preset.percent_change}%")
+                    logger.info(f"Alert triggered for user {user_id}: {symbol} {interval} {price_change:.3f}% >= {preset.percent_change}%")
                     
-                    # ФОРМАТИРУЕМ алерт здесь
+                    # ФОРМАТИРУЕМ алерт с корреляцией
                     direction = "🟢" if price_change > 0 else "🔴"
-                    alert_text = f"{direction} {symbol} {interval}: {abs(price_change):.2f}% (${candle['close']})"
+                    alert_text = f"{direction} {symbol} {interval}: {abs(price_change):.3f}% (${candle['close']})"
+                    
+                    # Добавляем корреляцию с BTC если есть
+                    if btc_correlation:
+                        alert_text += f"\n{btc_correlation}"
                     
                     alerts_to_send.append((user_id, alert_text))
                     
@@ -159,7 +179,7 @@ class CandleProcessor:
                         symbol=symbol,
                         interval=interval,
                         timestamp=datetime.now(),
-                        percent_change=float(price_change)
+                        percent_change=price_change
                     ))
                     
                     # ОСТАНАВЛИВАЕМСЯ - не проверяем остальные пресеты этого пользователя
@@ -167,7 +187,7 @@ class CandleProcessor:
                     break
             
             if not alert_sent:
-                logger.debug(f"No alerts triggered for user {user_id}: {abs(price_change)}% below all thresholds")
+                logger.debug(f"No alerts triggered for user {user_id}: {abs(price_change):.3f}% below all thresholds")
         
         # Отправляем алерты через очередь
         if alerts_to_send:
@@ -179,10 +199,49 @@ class CandleProcessor:
         else:
             logger.debug(f"No alerts to send for {symbol} {interval}")
     
-    async def _should_send_alert(self, symbol: str, interval: str, price_change: Decimal) -> bool:
+    async def _get_btc_correlation(self, symbol: str, interval: str, price_change: float) -> Optional[str]:
+        """Получение корреляции с биткоином"""
+        # Если это сам биткоин - не показываем корреляцию
+        if symbol == 'BTCUSDT':
+            return None
+        
+        async with self._btc_lock:
+            btc_info = self.btc_data.get(interval)
+            
+            if not btc_info:
+                return None
+            
+            # Проверяем актуальность данных BTC (не старше 5 минут)
+            if (datetime.now() - btc_info['timestamp']).total_seconds() > 300:
+                return None
+            
+            btc_change = btc_info['change']
+            
+            # Рассчитываем разницу
+            difference = price_change - btc_change
+            
+            # Определяем тип движения
+            if abs(btc_change) < 0.1:  # BTC почти не двигается
+                if abs(price_change) > 1.0:
+                    return f"💥 BTC: {btc_change:+.3f}% (сильное движение)"
+                else:
+                    return f"➡️ BTC: {btc_change:+.3f}%"
+            
+            # Форматируем с разницей
+            if difference > 0:
+                # Монета растет сильнее BTC или падает слабее
+                return f"🚀 BTC: {btc_change:+.3f}% (разница: {difference:+.3f}%)"
+            elif difference < -1.0:
+                # Монета растет слабее BTC или падает сильнее
+                return f"⚠️ BTC: {btc_change:+.3f}% (разница: {difference:+.3f}%)"
+            else:
+                # Движение примерно одинаковое
+                return f"🔄 BTC: {btc_change:+.3f}% (разница: {difference:+.3f}%)"
+    
+    async def _should_send_alert(self, symbol: str, interval: str, price_change: float) -> bool:
         """Проверка дедупликации алертов"""
         async with self._cooldown_lock:
-            key = (symbol, interval, str(price_change))
+            key = (symbol, interval, f"{price_change:.4f}")
             
             if key in self._cooldown:
                 return False

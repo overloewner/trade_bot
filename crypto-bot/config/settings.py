@@ -100,7 +100,7 @@ class Config:
     MAX_PERCENT_CHANGE: float = 100.0
     
     # Предустановленные проценты
-    PERCENT_PRESETS: List[float] = field(default_factory=lambda: [0.5, 1.0, 2.0, 3.0, 5.0, 10.0])
+    PERCENT_PRESETS: List[float] = field(default_factory=lambda: [0.5, 1.0, 3.0, 5.0])
     
     # Предустановленные пороги газа (Gwei)
     GAS_PRESETS: List[int] = field(default_factory=lambda: [10, 15, 20, 25, 30, 50])
